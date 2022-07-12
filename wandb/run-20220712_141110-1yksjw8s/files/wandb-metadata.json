@@ -1,0 +1,18 @@
+{
+    "os": "Linux-5.13.0-41-generic-x86_64-with-glibc2.31",
+    "python": "3.9.12",
+    "heartbeatAt": "2022-07-12T06:11:11.465841",
+    "startedAt": "2022-07-12T06:11:10.788892",
+    "docker": null,
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "gpu_count": 8,
+    "cpu_count": 48,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/code/MixSaT/main.py",
+    "codePath": "main.py",
+    "host": "cihe-SYS-4029GP-TRT",
+    "username": "cychan",
+    "executable": "/home/cychan/anaconda3/envs/SoccerNet/bin/python"
+}

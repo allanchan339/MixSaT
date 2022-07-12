@@ -1,0 +1,626 @@
+/home/cychan/anaconda3/envs/SoccerNet/lib/python3.9/site-packages/pytorch_lightning/trainer/connectors/accelerator_connector.py:147: UserWarning: You passed `deterministic=True` and `benchmark=True`. Note that PyTorch ignores torch.backends.cudnn.deterministic=True when torch.backends.cudnn.benchmark=True.
+  rank_zero_warn(
+Trainer already configured with model summary callbacks: [<class 'pytorch_lightning.callbacks.model_summary.ModelSummary'>]. Skipping setting a default `ModelSummary` callback.
+GPU available: True, used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+`Trainer(limit_val_batches=1.0)` was configured so 100% of the batches will be used..
+Global seed set to 42
+Initializing distributed: GLOBAL_RANK: 0, MEMBER: 1/8
+----------------------------------------------------------------------------------------------------
+distributed_backend=nccl
+All distributed processes registered. Starting with 8 processes
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 300/300 [02:22<00:00,  2.10it/s]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 100/100 [00:44<00:00,  2.24it/s]
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0,1,2,3,4,5,6,7]
+    | Name                                       | Type                       | Params
+--------------------------------------------------------------------------------------------
+0   | model                                      | TwinsSVT_1d_group_LoGlo_SE | 49.0 M
+1   | model.layers                               | Sequential                 | 49.0 M
+2   | model.layers.0                             | Sequential                 | 1.5 M
+3   | model.layers.0.0                           | PatchEmbedding             | 1.5 K
+4   | model.layers.0.0.proj                      | Conv1d                     | 1.5 K
+5   | model.layers.0.1                           | Transformer                | 426 K
+6   | model.layers.0.1.layers                    | ModuleList                 | 426 K
+7   | model.layers.0.1.layers.0                  | ModuleList                 | 426 K
+8   | model.layers.0.1.layers.0.0                | Residual                   | 21.8 K
+9   | model.layers.0.1.layers.0.0.fn             | PreNorm                    | 21.8 K
+10  | model.layers.0.1.layers.0.0.fn.norm        | LayerNorm                  | 120
+11  | model.layers.0.1.layers.0.0.fn.fn          | LocalAttention             | 21.7 K
+12  | model.layers.0.1.layers.0.0.fn.fn.to_q     | Conv1d                     | 3.6 K
+13  | model.layers.0.1.layers.0.0.fn.fn.to_kv    | Conv1d                     | 7.2 K
+14  | model.layers.0.1.layers.0.0.fn.fn.to_out   | Sequential                 | 10.9 K
+15  | model.layers.0.1.layers.0.0.fn.fn.to_out.0 | Conv1d                     | 10.9 K
+16  | model.layers.0.1.layers.0.0.fn.fn.to_out.1 | Dropout                    | 0
+17  | model.layers.0.1.layers.0.1                | Residual                   | 29.2 K
+18  | model.layers.0.1.layers.0.1.fn             | PreNorm                    | 29.2 K
+19  | model.layers.0.1.layers.0.1.fn.norm        | LayerNorm                  | 120
+20  | model.layers.0.1.layers.0.1.fn.fn          | FeedForward                | 29.1 K
+21  | model.layers.0.1.layers.0.1.fn.fn.net      | Sequential                 | 29.1 K
+22  | model.layers.0.1.layers.0.1.fn.fn.net.0    | Conv1d                     | 14.6 K
+23  | model.layers.0.1.layers.0.1.fn.fn.net.1    | GELU                       | 0
+24  | model.layers.0.1.layers.0.1.fn.fn.net.2    | Dropout                    | 0
+25  | model.layers.0.1.layers.0.1.fn.fn.net.3    | Conv1d                     | 14.5 K
+26  | model.layers.0.1.layers.0.1.fn.fn.net.4    | Dropout                    | 0
+27  | model.layers.0.1.layers.0.2                | Residual                   | 158 K
+28  | model.layers.0.1.layers.0.2.fn             | PreNorm                    | 158 K
+29  | model.layers.0.1.layers.0.2.fn.norm        | LayerNorm                  | 120
+30  | model.layers.0.1.layers.0.2.fn.fn          | GlobalAttention            | 158 K
+31  | model.layers.0.1.layers.0.2.fn.fn.to_q     | Conv1d                     | 3.6 K
+32  | model.layers.0.1.layers.0.2.fn.fn.to_kv    | Conv1d                     | 144 K
+33  | model.layers.0.1.layers.0.2.fn.fn.dropout  | Dropout                    | 0
+34  | model.layers.0.1.layers.0.2.fn.fn.to_out   | Sequential                 | 10.9 K
+35  | model.layers.0.1.layers.0.2.fn.fn.to_out.0 | Conv1d                     | 10.9 K
+36  | model.layers.0.1.layers.0.2.fn.fn.to_out.1 | Dropout                    | 0
+37  | model.layers.0.1.layers.0.3                | Residual                   | 29.2 K
+38  | model.layers.0.1.layers.0.3.fn             | PreNorm                    | 29.2 K
+39  | model.layers.0.1.layers.0.3.fn.norm        | LayerNorm                  | 120
+40  | model.layers.0.1.layers.0.3.fn.fn          | FeedForward                | 29.1 K
+41  | model.layers.0.1.layers.0.3.fn.fn.net      | Sequential                 | 29.1 K
+42  | model.layers.0.1.layers.0.3.fn.fn.net.0    | Conv1d                     | 14.6 K
+43  | model.layers.0.1.layers.0.3.fn.fn.net.1    | GELU                       | 0
+44  | model.layers.0.1.layers.0.3.fn.fn.net.2    | Dropout                    | 0
+45  | model.layers.0.1.layers.0.3.fn.fn.net.3    | Conv1d                     | 14.5 K
+46  | model.layers.0.1.layers.0.3.fn.fn.net.4    | Dropout                    | 0
+47  | model.layers.0.1.layers.0.4                | SEAttention                | 360
+48  | model.layers.0.1.layers.0.4.avg_pool       | AdaptiveAvgPool1d          | 0
+49  | model.layers.0.1.layers.0.4.fc             | Sequential                 | 360
+50  | model.layers.0.1.layers.0.4.fc.0           | Linear                     | 180
+51  | model.layers.0.1.layers.0.4.fc.1           | GELU                       | 0
+52  | model.layers.0.1.layers.0.4.fc.2           | Linear                     | 180
+53  | model.layers.0.1.layers.0.4.fc.3           | Sigmoid                    | 0
+54  | model.layers.0.1.layers.0.5                | Residual                   | 158 K
+55  | model.layers.0.1.layers.0.5.fn             | PreNorm                    | 158 K
+56  | model.layers.0.1.layers.0.5.fn.norm        | LayerNorm                  | 120
+57  | model.layers.0.1.layers.0.5.fn.fn          | LoGloAttention             | 158 K
+58  | model.layers.0.1.layers.0.5.fn.fn.to_q     | Conv1d                     | 3.6 K
+59  | model.layers.0.1.layers.0.5.fn.fn.to_kv    | Conv1d                     | 144 K
+60  | model.layers.0.1.layers.0.5.fn.fn.to_out   | Sequential                 | 10.9 K
+61  | model.layers.0.1.layers.0.5.fn.fn.to_out.0 | Conv1d                     | 10.9 K
+62  | model.layers.0.1.layers.0.5.fn.fn.to_out.1 | Dropout                    | 0
+63  | model.layers.0.1.layers.0.6                | Residual                   | 29.2 K
+64  | model.layers.0.1.layers.0.6.fn             | PreNorm                    | 29.2 K
+65  | model.layers.0.1.layers.0.6.fn.norm        | LayerNorm                  | 120
+66  | model.layers.0.1.layers.0.6.fn.fn          | FeedForward                | 29.1 K
+67  | model.layers.0.1.layers.0.6.fn.fn.net      | Sequential                 | 29.1 K
+68  | model.layers.0.1.layers.0.6.fn.fn.net.0    | Conv1d                     | 14.6 K
+69  | model.layers.0.1.layers.0.6.fn.fn.net.1    | GELU                       | 0
+70  | model.layers.0.1.layers.0.6.fn.fn.net.2    | Dropout                    | 0
+71  | model.layers.0.1.layers.0.6.fn.fn.net.3    | Conv1d                     | 14.5 K
+72  | model.layers.0.1.layers.0.6.fn.fn.net.4    | Dropout                    | 0
+73  | model.layers.0.2                           | PEG                        | 600
+74  | model.layers.0.2.proj                      | Residual                   | 600
+75  | model.layers.0.2.proj.fn                   | Conv1d                     | 600
+76  | model.layers.0.3                           | Transformer                | 1.0 M
+77  | model.layers.0.3.layers                    | ModuleList                 | 1.0 M
+78  | model.layers.0.3.layers.0                  | ModuleList                 | 1.0 M
+79  | model.layers.0.3.layers.0.0                | Residual                   | 43.4 K
+80  | model.layers.0.3.layers.0.0.fn             | PreNorm                    | 43.4 K
+81  | model.layers.0.3.layers.0.0.fn.norm        | LayerNorm                  | 120
+82  | model.layers.0.3.layers.0.0.fn.fn          | LocalAttention             | 43.3 K
+83  | model.layers.0.3.layers.0.0.fn.fn.to_q     | Conv1d                     | 10.8 K
+84  | model.layers.0.3.layers.0.0.fn.fn.to_kv    | Conv1d                     | 21.6 K
+85  | model.layers.0.3.layers.0.0.fn.fn.to_out   | Sequential                 | 10.9 K
+86  | model.layers.0.3.layers.0.0.fn.fn.to_out.0 | Conv1d                     | 10.9 K
+87  | model.layers.0.3.layers.0.0.fn.fn.to_out.1 | Dropout                    | 0
+88  | model.layers.0.3.layers.0.1                | Residual                   | 29.2 K
+89  | model.layers.0.3.layers.0.1.fn             | PreNorm                    | 29.2 K
+90  | model.layers.0.3.layers.0.1.fn.norm        | LayerNorm                  | 120
+91  | model.layers.0.3.layers.0.1.fn.fn          | FeedForward                | 29.1 K
+92  | model.layers.0.3.layers.0.1.fn.fn.net      | Sequential                 | 29.1 K
+93  | model.layers.0.3.layers.0.1.fn.fn.net.0    | Conv1d                     | 14.6 K
+94  | model.layers.0.3.layers.0.1.fn.fn.net.1    | GELU                       | 0
+95  | model.layers.0.3.layers.0.1.fn.fn.net.2    | Dropout                    | 0
+96  | model.layers.0.3.layers.0.1.fn.fn.net.3    | Conv1d                     | 14.5 K
+97  | model.layers.0.3.layers.0.1.fn.fn.net.4    | Dropout                    | 0
+98  | model.layers.0.3.layers.0.2                | Residual                   | 453 K
+99  | model.layers.0.3.layers.0.2.fn             | PreNorm                    | 453 K
+100 | model.layers.0.3.layers.0.2.fn.norm        | LayerNorm                  | 120
+101 | model.layers.0.3.layers.0.2.fn.fn          | GlobalAttention            | 453 K
+102 | model.layers.0.3.layers.0.2.fn.fn.to_q     | Conv1d                     | 10.8 K
+103 | model.layers.0.3.layers.0.2.fn.fn.to_kv    | Conv1d                     | 432 K
+104 | model.layers.0.3.layers.0.2.fn.fn.dropout  | Dropout                    | 0
+105 | model.layers.0.3.layers.0.2.fn.fn.to_out   | Sequential                 | 10.9 K
+106 | model.layers.0.3.layers.0.2.fn.fn.to_out.0 | Conv1d                     | 10.9 K
+107 | model.layers.0.3.layers.0.2.fn.fn.to_out.1 | Dropout                    | 0
+108 | model.layers.0.3.layers.0.3                | Residual                   | 29.2 K
+109 | model.layers.0.3.layers.0.3.fn             | PreNorm                    | 29.2 K
+110 | model.layers.0.3.layers.0.3.fn.norm        | LayerNorm                  | 120
+111 | model.layers.0.3.layers.0.3.fn.fn          | FeedForward                | 29.1 K
+112 | model.layers.0.3.layers.0.3.fn.fn.net      | Sequential                 | 29.1 K
+113 | model.layers.0.3.layers.0.3.fn.fn.net.0    | Conv1d                     | 14.6 K
+114 | model.layers.0.3.layers.0.3.fn.fn.net.1    | GELU                       | 0
+115 | model.layers.0.3.layers.0.3.fn.fn.net.2    | Dropout                    | 0
+116 | model.layers.0.3.layers.0.3.fn.fn.net.3    | Conv1d                     | 14.5 K
+117 | model.layers.0.3.layers.0.3.fn.fn.net.4    | Dropout                    | 0
+118 | model.layers.0.3.layers.0.4                | SEAttention                | 360
+119 | model.layers.0.3.layers.0.4.avg_pool       | AdaptiveAvgPool1d          | 0
+120 | model.layers.0.3.layers.0.4.fc             | Sequential                 | 360
+121 | model.layers.0.3.layers.0.4.fc.0           | Linear                     | 180
+122 | model.layers.0.3.layers.0.4.fc.1           | GELU                       | 0
+123 | model.layers.0.3.layers.0.4.fc.2           | Linear                     | 180
+124 | model.layers.0.3.layers.0.4.fc.3           | Sigmoid                    | 0
+125 | model.layers.0.3.layers.0.5                | Residual                   | 453 K
+126 | model.layers.0.3.layers.0.5.fn             | PreNorm                    | 453 K
+127 | model.layers.0.3.layers.0.5.fn.norm        | LayerNorm                  | 120
+128 | model.layers.0.3.layers.0.5.fn.fn          | LoGloAttention             | 453 K
+129 | model.layers.0.3.layers.0.5.fn.fn.to_q     | Conv1d                     | 10.8 K
+130 | model.layers.0.3.layers.0.5.fn.fn.to_kv    | Conv1d                     | 432 K
+131 | model.layers.0.3.layers.0.5.fn.fn.to_out   | Sequential                 | 10.9 K
+132 | model.layers.0.3.layers.0.5.fn.fn.to_out.0 | Conv1d                     | 10.9 K
+133 | model.layers.0.3.layers.0.5.fn.fn.to_out.1 | Dropout                    | 0
+134 | model.layers.0.3.layers.0.6                | Residual                   | 29.2 K
+135 | model.layers.0.3.layers.0.6.fn             | PreNorm                    | 29.2 K
+136 | model.layers.0.3.layers.0.6.fn.norm        | LayerNorm                  | 120
+137 | model.layers.0.3.layers.0.6.fn.fn          | FeedForward                | 29.1 K
+138 | model.layers.0.3.layers.0.6.fn.fn.net      | Sequential                 | 29.1 K
+139 | model.layers.0.3.layers.0.6.fn.fn.net.0    | Conv1d                     | 14.6 K
+140 | model.layers.0.3.layers.0.6.fn.fn.net.1    | GELU                       | 0
+141 | model.layers.0.3.layers.0.6.fn.fn.net.2    | Dropout                    | 0
+142 | model.layers.0.3.layers.0.6.fn.fn.net.3    | Conv1d                     | 14.5 K
+143 | model.layers.0.3.layers.0.6.fn.fn.net.4    | Dropout                    | 0
+144 | model.layers.1                             | Sequential                 | 47.5 M
+145 | model.layers.1.0                           | PatchEmbedding             | 173 K
+146 | model.layers.1.0.proj                      | Conv1d                     | 173 K
+147 | model.layers.1.1                           | Transformer                | 8.8 M
+148 | model.layers.1.1.layers                    | ModuleList                 | 8.8 M
+149 | model.layers.1.1.layers.0                  | ModuleList                 | 8.8 M
+150 | model.layers.1.1.layers.0.0                | Identity                   | 0
+151 | model.layers.1.1.layers.0.1                | Identity                   | 0
+152 | model.layers.1.1.layers.0.2                | Residual                   | 220 K
+153 | model.layers.1.1.layers.0.2.fn             | PreNorm                    | 220 K
+154 | model.layers.1.1.layers.0.2.fn.norm        | LayerNorm                  | 1.4 K
+155 | model.layers.1.1.layers.0.2.fn.fn          | GlobalAttention            | 218 K
+156 | model.layers.1.1.layers.0.2.fn.fn.to_q     | Conv1d                     | 2.2 K
+157 | model.layers.1.1.layers.0.2.fn.fn.to_kv    | Conv1d                     | 86.4 K
+158 | model.layers.1.1.layers.0.2.fn.fn.dropout  | Dropout                    | 0
+159 | model.layers.1.1.layers.0.2.fn.fn.to_out   | Sequential                 | 130 K
+160 | model.layers.1.1.layers.0.2.fn.fn.to_out.0 | Conv1d                     | 130 K
+161 | model.layers.1.1.layers.0.2.fn.fn.to_out.1 | Dropout                    | 0
+162 | model.layers.1.1.layers.0.3                | Residual                   | 4.2 M
+163 | model.layers.1.1.layers.0.3.fn             | PreNorm                    | 4.2 M
+164 | model.layers.1.1.layers.0.3.fn.norm        | LayerNorm                  | 1.4 K
+165 | model.layers.1.1.layers.0.3.fn.fn          | FeedForward                | 4.2 M
+166 | model.layers.1.1.layers.0.3.fn.fn.net      | Sequential                 | 4.2 M
+167 | model.layers.1.1.layers.0.3.fn.fn.net.0    | Conv1d                     | 2.1 M
+168 | model.layers.1.1.layers.0.3.fn.fn.net.1    | GELU                       | 0
+169 | model.layers.1.1.layers.0.3.fn.fn.net.2    | Dropout                    | 0
+170 | model.layers.1.1.layers.0.3.fn.fn.net.3    | Conv1d                     | 2.1 M
+171 | model.layers.1.1.layers.0.3.fn.fn.net.4    | Dropout                    | 0
+172 | model.layers.1.1.layers.0.4                | SEAttention                | 64.8 K
+173 | model.layers.1.1.layers.0.4.avg_pool       | AdaptiveAvgPool1d          | 0
+174 | model.layers.1.1.layers.0.4.fc             | Sequential                 | 64.8 K
+175 | model.layers.1.1.layers.0.4.fc.0           | Linear                     | 32.4 K
+176 | model.layers.1.1.layers.0.4.fc.1           | GELU                       | 0
+177 | model.layers.1.1.layers.0.4.fc.2           | Linear                     | 32.4 K
+178 | model.layers.1.1.layers.0.4.fc.3           | Sigmoid                    | 0
+179 | model.layers.1.1.layers.0.5                | Residual                   | 220 K
+180 | model.layers.1.1.layers.0.5.fn             | PreNorm                    | 220 K
+181 | model.layers.1.1.layers.0.5.fn.norm        | LayerNorm                  | 1.4 K
+182 | model.layers.1.1.layers.0.5.fn.fn          | LoGloAttention             | 218 K
+183 | model.layers.1.1.layers.0.5.fn.fn.to_q     | Conv1d                     | 2.2 K
+184 | model.layers.1.1.layers.0.5.fn.fn.to_kv    | Conv1d                     | 86.4 K
+185 | model.layers.1.1.layers.0.5.fn.fn.to_out   | Sequential                 | 130 K
+186 | model.layers.1.1.layers.0.5.fn.fn.to_out.0 | Conv1d                     | 130 K
+187 | model.layers.1.1.layers.0.5.fn.fn.to_out.1 | Dropout                    | 0
+188 | model.layers.1.1.layers.0.6                | Residual                   | 4.2 M
+189 | model.layers.1.1.layers.0.6.fn             | PreNorm                    | 4.2 M
+190 | model.layers.1.1.layers.0.6.fn.norm        | LayerNorm                  | 1.4 K
+191 | model.layers.1.1.layers.0.6.fn.fn          | FeedForward                | 4.2 M
+192 | model.layers.1.1.layers.0.6.fn.fn.net      | Sequential                 | 4.2 M
+193 | model.layers.1.1.layers.0.6.fn.fn.net.0    | Conv1d                     | 2.1 M
+194 | model.layers.1.1.layers.0.6.fn.fn.net.1    | GELU                       | 0
+195 | model.layers.1.1.layers.0.6.fn.fn.net.2    | Dropout                    | 0
+196 | model.layers.1.1.layers.0.6.fn.fn.net.3    | Conv1d                     | 2.1 M
+197 | model.layers.1.1.layers.0.6.fn.fn.net.4    | Dropout                    | 0
+198 | model.layers.1.2                           | PEG                        | 7.2 K
+199 | model.layers.1.2.proj                      | Residual                   | 7.2 K
+200 | model.layers.1.2.proj.fn                   | Conv1d                     | 7.2 K
+201 | model.layers.1.3                           | Transformer                | 38.5 M
+202 | model.layers.1.3.layers                    | ModuleList                 | 38.5 M
+203 | model.layers.1.3.layers.0                  | ModuleList                 | 19.3 M
+204 | model.layers.1.3.layers.0.0                | Identity                   | 0
+205 | model.layers.1.3.layers.0.1                | Identity                   | 0
+206 | model.layers.1.3.layers.0.2                | Residual                   | 5.4 M
+207 | model.layers.1.3.layers.0.2.fn             | PreNorm                    | 5.4 M
+208 | model.layers.1.3.layers.0.2.fn.norm        | LayerNorm                  | 1.4 K
+209 | model.layers.1.3.layers.0.2.fn.fn          | GlobalAttention            | 5.4 M
+210 | model.layers.1.3.layers.0.2.fn.fn.to_q     | Conv1d                     | 129 K
+211 | model.layers.1.3.layers.0.2.fn.fn.to_kv    | Conv1d                     | 5.2 M
+212 | model.layers.1.3.layers.0.2.fn.fn.dropout  | Dropout                    | 0
+213 | model.layers.1.3.layers.0.2.fn.fn.to_out   | Sequential                 | 130 K
+214 | model.layers.1.3.layers.0.2.fn.fn.to_out.0 | Conv1d                     | 130 K
+215 | model.layers.1.3.layers.0.2.fn.fn.to_out.1 | Dropout                    | 0
+216 | model.layers.1.3.layers.0.3                | Residual                   | 4.2 M
+217 | model.layers.1.3.layers.0.3.fn             | PreNorm                    | 4.2 M
+218 | model.layers.1.3.layers.0.3.fn.norm        | LayerNorm                  | 1.4 K
+219 | model.layers.1.3.layers.0.3.fn.fn          | FeedForward                | 4.2 M
+220 | model.layers.1.3.layers.0.3.fn.fn.net      | Sequential                 | 4.2 M
+221 | model.layers.1.3.layers.0.3.fn.fn.net.0    | Conv1d                     | 2.1 M
+222 | model.layers.1.3.layers.0.3.fn.fn.net.1    | GELU                       | 0
+223 | model.layers.1.3.layers.0.3.fn.fn.net.2    | Dropout                    | 0
+224 | model.layers.1.3.layers.0.3.fn.fn.net.3    | Conv1d                     | 2.1 M
+225 | model.layers.1.3.layers.0.3.fn.fn.net.4    | Dropout                    | 0
+226 | model.layers.1.3.layers.0.4                | SEAttention                | 64.8 K
+227 | model.layers.1.3.layers.0.4.avg_pool       | AdaptiveAvgPool1d          | 0
+228 | model.layers.1.3.layers.0.4.fc             | Sequential                 | 64.8 K
+229 | model.layers.1.3.layers.0.4.fc.0           | Linear                     | 32.4 K
+230 | model.layers.1.3.layers.0.4.fc.1           | GELU                       | 0
+231 | model.layers.1.3.layers.0.4.fc.2           | Linear                     | 32.4 K
+232 | model.layers.1.3.layers.0.4.fc.3           | Sigmoid                    | 0
+233 | model.layers.1.3.layers.0.5                | Residual                   | 5.4 M
+234 | model.layers.1.3.layers.0.5.fn             | PreNorm                    | 5.4 M
+235 | model.layers.1.3.layers.0.5.fn.norm        | LayerNorm                  | 1.4 K
+236 | model.layers.1.3.layers.0.5.fn.fn          | LoGloAttention             | 5.4 M
+237 | model.layers.1.3.layers.0.5.fn.fn.to_q     | Conv1d                     | 129 K
+238 | model.layers.1.3.layers.0.5.fn.fn.to_kv    | Conv1d                     | 5.2 M
+239 | model.layers.1.3.layers.0.5.fn.fn.to_out   | Sequential                 | 130 K
+240 | model.layers.1.3.layers.0.5.fn.fn.to_out.0 | Conv1d                     | 130 K
+241 | model.layers.1.3.layers.0.5.fn.fn.to_out.1 | Dropout                    | 0
+242 | model.layers.1.3.layers.0.6                | Residual                   | 4.2 M
+243 | model.layers.1.3.layers.0.6.fn             | PreNorm                    | 4.2 M
+244 | model.layers.1.3.layers.0.6.fn.norm        | LayerNorm                  | 1.4 K
+245 | model.layers.1.3.layers.0.6.fn.fn          | FeedForward                | 4.2 M
+246 | model.layers.1.3.layers.0.6.fn.fn.net      | Sequential                 | 4.2 M
+247 | model.layers.1.3.layers.0.6.fn.fn.net.0    | Conv1d                     | 2.1 M
+248 | model.layers.1.3.layers.0.6.fn.fn.net.1    | GELU                       | 0
+249 | model.layers.1.3.layers.0.6.fn.fn.net.2    | Dropout                    | 0
+250 | model.layers.1.3.layers.0.6.fn.fn.net.3    | Conv1d                     | 2.1 M
+251 | model.layers.1.3.layers.0.6.fn.fn.net.4    | Dropout                    | 0
+252 | model.layers.1.3.layers.1                  | ModuleList                 | 19.3 M
+253 | model.layers.1.3.layers.1.0                | Identity                   | 0
+254 | model.layers.1.3.layers.1.1                | Identity                   | 0
+255 | model.layers.1.3.layers.1.2                | Residual                   | 5.4 M
+256 | model.layers.1.3.layers.1.2.fn             | PreNorm                    | 5.4 M
+257 | model.layers.1.3.layers.1.2.fn.norm        | LayerNorm                  | 1.4 K
+258 | model.layers.1.3.layers.1.2.fn.fn          | GlobalAttention            | 5.4 M
+259 | model.layers.1.3.layers.1.2.fn.fn.to_q     | Conv1d                     | 129 K
+260 | model.layers.1.3.layers.1.2.fn.fn.to_kv    | Conv1d                     | 5.2 M
+261 | model.layers.1.3.layers.1.2.fn.fn.dropout  | Dropout                    | 0
+262 | model.layers.1.3.layers.1.2.fn.fn.to_out   | Sequential                 | 130 K
+263 | model.layers.1.3.layers.1.2.fn.fn.to_out.0 | Conv1d                     | 130 K
+264 | model.layers.1.3.layers.1.2.fn.fn.to_out.1 | Dropout                    | 0
+265 | model.layers.1.3.layers.1.3                | Residual                   | 4.2 M
+266 | model.layers.1.3.layers.1.3.fn             | PreNorm                    | 4.2 M
+267 | model.layers.1.3.layers.1.3.fn.norm        | LayerNorm                  | 1.4 K
+268 | model.layers.1.3.layers.1.3.fn.fn          | FeedForward                | 4.2 M
+269 | model.layers.1.3.layers.1.3.fn.fn.net      | Sequential                 | 4.2 M
+270 | model.layers.1.3.layers.1.3.fn.fn.net.0    | Conv1d                     | 2.1 M
+271 | model.layers.1.3.layers.1.3.fn.fn.net.1    | GELU                       | 0
+272 | model.layers.1.3.layers.1.3.fn.fn.net.2    | Dropout                    | 0
+273 | model.layers.1.3.layers.1.3.fn.fn.net.3    | Conv1d                     | 2.1 M
+274 | model.layers.1.3.layers.1.3.fn.fn.net.4    | Dropout                    | 0
+275 | model.layers.1.3.layers.1.4                | SEAttention                | 64.8 K
+276 | model.layers.1.3.layers.1.4.avg_pool       | AdaptiveAvgPool1d          | 0
+277 | model.layers.1.3.layers.1.4.fc             | Sequential                 | 64.8 K
+278 | model.layers.1.3.layers.1.4.fc.0           | Linear                     | 32.4 K
+279 | model.layers.1.3.layers.1.4.fc.1           | GELU                       | 0
+280 | model.layers.1.3.layers.1.4.fc.2           | Linear                     | 32.4 K
+281 | model.layers.1.3.layers.1.4.fc.3           | Sigmoid                    | 0
+282 | model.layers.1.3.layers.1.5                | Residual                   | 5.4 M
+283 | model.layers.1.3.layers.1.5.fn             | PreNorm                    | 5.4 M
+284 | model.layers.1.3.layers.1.5.fn.norm        | LayerNorm                  | 1.4 K
+285 | model.layers.1.3.layers.1.5.fn.fn          | LoGloAttention             | 5.4 M
+286 | model.layers.1.3.layers.1.5.fn.fn.to_q     | Conv1d                     | 129 K
+287 | model.layers.1.3.layers.1.5.fn.fn.to_kv    | Conv1d                     | 5.2 M
+288 | model.layers.1.3.layers.1.5.fn.fn.to_out   | Sequential                 | 130 K
+289 | model.layers.1.3.layers.1.5.fn.fn.to_out.0 | Conv1d                     | 130 K
+290 | model.layers.1.3.layers.1.5.fn.fn.to_out.1 | Dropout                    | 0
+291 | model.layers.1.3.layers.1.6                | Residual                   | 4.2 M
+292 | model.layers.1.3.layers.1.6.fn             | PreNorm                    | 4.2 M
+293 | model.layers.1.3.layers.1.6.fn.norm        | LayerNorm                  | 1.4 K
+294 | model.layers.1.3.layers.1.6.fn.fn          | FeedForward                | 4.2 M
+295 | model.layers.1.3.layers.1.6.fn.fn.net      | Sequential                 | 4.2 M
+296 | model.layers.1.3.layers.1.6.fn.fn.net.0    | Conv1d                     | 2.1 M
+297 | model.layers.1.3.layers.1.6.fn.fn.net.1    | GELU                       | 0
+298 | model.layers.1.3.layers.1.6.fn.fn.net.2    | Dropout                    | 0
+299 | model.layers.1.3.layers.1.6.fn.fn.net.3    | Conv1d                     | 2.1 M
+300 | model.layers.1.3.layers.1.6.fn.fn.net.4    | Dropout                    | 0
+301 | model.layers.2                             | AdaptiveAvgPool1d          | 0
+302 | model.layers.3                             | Rearrange                  | 0
+303 | model.layers.4                             | Linear                     | 13.0 K
+304 | model.layers.5                             | Sigmoid                    | 0
+305 | criterion                                  | BCELoss                    | 0
+--------------------------------------------------------------------------------------------
+49.0 M    Trainable params
+0         Non-trainable params
+49.0 M    Total params
+195.967   Total estimated model params size (MB)
+/home/cychan/anaconda3/envs/SoccerNet/lib/python3.9/site-packages/sklearn/metrics/_ranking.py:877: UserWarning: No positive class found in y_true, recall is set to one for
+all thresholds.
+  warnings.warn(
+/home/cychan/anaconda3/envs/SoccerNet/lib/python3.9/site-packages/sklearn/metrics/_ranking.py:877: UserWarning: No positive class found in y_true, recall is set to one for
+all thresholds.
+  warnings.warn(
+/home/cychan/anaconda3/envs/SoccerNet/lib/python3.9/site-packages/sklearn/metrics/_ranking.py:877: UserWarning: No positive class found in y_true, recall is set to one for
+all thresholds.
+  warnings.warn(
+batch_size = 134
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
