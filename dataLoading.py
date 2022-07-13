@@ -1,6 +1,5 @@
 import pytorch_lightning as pl
-from dataset import SoccerNetClips, SoccerNetClipsTesting, SoccerNetClipsNoCache, SoccerNetClips_v2, \
-    SoccerNetClipsNoCache_SlidingWindow
+from dataset import *
 import torch
 
 
