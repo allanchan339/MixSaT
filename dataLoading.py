@@ -1,5 +1,6 @@
 import pytorch_lightning as pl
-from dataset import SoccerNetClips, SoccerNetClipsTesting, SoccerNetClipsNoCache, SoccerNetClips_v2
+from dataset import SoccerNetClips, SoccerNetClipsTesting, SoccerNetClipsNoCache, SoccerNetClips_v2, \
+    SoccerNetClipsNoCache_SlidingWindow
 import torch
 
 
@@ -17,7 +18,7 @@ class LitDataModule(pl.LightningDataModule):
     def setup(self, stage=None):
         """called by each rank (DDP)"""
         if stage == 'fit' or None:
-            self.dataset_Train = SoccerNetClipsNoCache(
+            self.dataset_Train = SoccerNetClipsNoCache_SlidingWindow(
                 path=self.args.SoccerNet_path,
                 features=self.args.features,
                 split=self.args.split_train,
@@ -25,7 +26,7 @@ class LitDataModule(pl.LightningDataModule):
                 framerate=self.args.framerate,
                 window_size=self.args.window_size, 
                 fast_dev=self.args.fast_dev)
-            self.dataset_Valid = SoccerNetClipsNoCache(
+            self.dataset_Valid = SoccerNetClipsNoCache_SlidingWindow(
                 path=self.args.SoccerNet_path,
                 features=self.args.features,
                 split=self.args.split_valid,

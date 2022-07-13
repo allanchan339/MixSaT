@@ -53,7 +53,7 @@ parser.add_argument('--log_every_n_steps', type=int, default=10,
 
 # Data loading args
 parser.add_argument('--batch_size', dest='batch_size',
-                    type=int, default=134, help='number of samples in one batch')
+                    type=int, default=64, help='number of samples in one batch')
 parser.add_argument('--SoccerNet_path', required=False, type=str,
                     default="/hdda/Datasets/SoccerNet",
                     help='directory for dataset')
@@ -88,19 +88,19 @@ parser.add_argument('--max_iters', required=False, type=int,
 
 # model args
 parser.add_argument('--model_name', required=False, type=str,
-                    default="TwinsSVT_1d_group_LoGlo_SE", help='named of the model to save')
+                    default="TwinsSVT_1d_group_SE", help='named of the model to save')
 parser.add_argument('--version', required=False, type=int,
                     default=2, help='Version of the dataset')
 parser.add_argument('--feature_dim', required=False, type=int,
                     default=None, help='Number of input features')
 parser.add_argument('--framerate', required=False, type=int,
-                    default=1, help='Framerate of the input features')
+                    default=2, help='Framerate of the input features')
 parser.add_argument('--window_size', required=False, type=int,
                     default=3, help='Size of the chunk (in seconds)')
 parser.add_argument('--window_shift', required=False, type=int,
                     default=0, help='Shift window RHS when slide by slide window data loading')
 parser.add_argument('--window_stride', required=False, type=int,
-                    default=0, help='1: Load data frame by frame')
+                    default=1, help='1: Load data frame by frame')
 parser.add_argument('--NMS_window', required=False,
                     type=int, default=6, help='NMS window in second')
 parser.add_argument('--NMS_threshold', required=False, type=float,
@@ -146,7 +146,7 @@ parser.add_argument('--project', default='MixSaT',
                     type=str, help='project for wandb')
 parser.add_argument('--entity', default='cihe-cis',
                     type=str, help='organization used in wandb')
-parser.add_argument('--experiment_name', default='Baseline',
+parser.add_argument('--experiment_name', default='Concat_sliding_testing',
                     type=str, help='experiment name for wandb')
 
 # model TwinsSVT args

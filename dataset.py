@@ -743,3 +743,141 @@ class SoccerNetClipsTesting(Dataset):
 
     def __len__(self):
         return len(self.listGames)
+
+
+class SoccerNetClipsNoCache_SlidingWindow(Dataset):
+    def __init__(self, path, features="baidu_soccer_embeddings.npy", features2="ResNET_TF2.npy", split=["train"],
+                 version=1,
+                 framerate=2, window_size=15, overlap=True, fast_dev=False):
+        self.path = path
+        self.listGames = getListGames(split)[:5] if fast_dev else getListGames(split)
+        self.features = features
+        self.ResNet_features = features2
+        self.window_size = window_size
+        self.window_size_frame = window_size * framerate
+        self.framerate = framerate
+        self.split = split
+        self.version = version
+        self.stride = self.window_size_frame if not overlap else 1
+        if version == 1:
+            self.num_classes = 3
+            self.labels = "Labels.json"
+        elif version == 2:
+            self.dict_event = EVENT_DICTIONARY_V2
+            self.num_classes = 17
+            self.labels = "Labels-v2.json"
+
+        self.save_clip = []
+        self.all_labels = []
+        self.all_feats = list()
+        self.save_label_position = []
+        for game in tqdm(self.listGames):
+            # Load features
+            len_half1 = np.load(os.path.join(
+                self.path, game, "1_" + self.features)).shape[0]
+            len_half1 = len(np.arange(0, len_half1 - 1, self.stride))
+            len_half2 = np.load(os.path.join(
+                self.path, game, "2_" + self.features)).shape[0]
+            len_half2 = len(np.arange(0, len_half2 - 1, self.stride))
+            # self.game_length.append([len_half1, len_half2])
+
+            label_half1 = np.zeros((len_half1, self.num_classes + 1))
+            label_half1[:, 0] = 1  # those are BG classes
+            label_half2 = np.zeros((len_half2, self.num_classes + 1))
+            label_half2[:, 0] = 1  # those are BG classes
+
+            if os.path.exists(os.path.join(self.path, game, self.labels)):
+                labels = json.load(
+                    open(os.path.join(self.path, game, self.labels)))
+                for annotation in labels["annotations"]:
+                    time = annotation["gameTime"]
+                    event = annotation["label"]
+                    half = int(time[0])
+                    minutes = int(time[-5:-3])
+                    seconds = int(time[-2::])
+                    frame = self.framerate * (seconds + 60 * minutes)
+
+                    if self.version == 1:
+                        if "card" in event:
+                            label = 0
+                        elif "subs" in event:
+                            label = 1
+                        elif "soccer" in event:
+                            label = 2
+                        else:
+                            continue
+                    elif self.version == 2:
+                        if event not in self.dict_event:
+                            continue
+                        label = self.dict_event[event]
+
+                    if half == 1 and frame // self.window_size_frame >= label_half1.shape[0]:
+                        continue  # skip loop if condition meets
+                    if half == 2 and frame // self.window_size_frame >= label_half2.shape[0]:
+                        continue
+
+                    # Ignore non-visibility label
+                    # if "visibility" in annotation.keys():
+                    #     if annotation["visibility"] == "not shown":
+                    #         continue
+
+                    if half == 1:  # if on label.json
+                        frame = min(frame, len_half1 - 1)
+                        label_half1[frame // self.stride][0] = 0
+                        label_half1[frame // self.stride][label + 1] = 1
+
+                    if half == 2:
+                        frame = min(frame, len_half2 - 1)
+                        label_half2[frame // self.stride][0] = 0
+                        label_half2[frame // self.stride][label + 1] = 1
+
+                for i in range(label_half1.shape[0]):
+                    self.all_labels.append((label_half1[i]))  # label_half1 = np.delete(label_half1, i)
+                    self.save_label_position.append([game, '1_', i])
+
+                for i in range(label_half2.shape[0]):
+                    self.all_labels.append((label_half2[i]))
+                    self.save_label_position.append([game, '2_', i])
+
+            # self.save_clip.append(save_label_position)
+        self.all_labels = np.array(self.all_labels)
+
+        # # logging.info("Checking/Download features and labels locally")
+        # downloader = SoccerNetDownloader(path)
+        # downloader.downloadGames(files=[
+        #     self.labels, f"1_{self.features}", f"2_{self.features}"], split=split, verbose=False, randomized=True)
+
+    def __getitem__(self, index):
+        """
+            Args:
+                index (int): Index
+            Returns:
+                clip_feat (np.array): clip of features.
+                clip_labels (np.array): clip of labels for the segmentation.
+                clip_targets (np.array): clip of targets for the spotting.
+            """
+        game = self.save_label_position[index][0]
+        half = self.save_label_position[index][1]
+        position = self.save_label_position[index][2]
+
+        # Load features
+        feat = np.load(os.path.join(
+            self.path, game, half + self.features), mmap_mode='r')
+        ResNet_feat = np.load(os.path.join(
+            self.path, game, half + self.ResNet_features))
+        ResNet_feat = ResNet_feat.reshape((-1, ResNet_feat.shape[-1]))
+        feat = feat.reshape(-1, feat.shape[-1])
+        idxs = np.arange(position * self.window_size, (position + 1) * self.window_size)
+        idxs = np.clip(idxs, position * self.window_size + 1, feat.shape[0] - 1)
+        feat = feat[idxs, ...]
+        feat_interpolated = []
+        for i in range(self.window_size - 1):
+            feat_interpolated.append([*feat[i], *ResNet_feat[position + i]])
+            feat_interpolated.append([*((feat[i] + feat[i + 1]) / 2), *ResNet_feat[position + i + 1]])
+        feat_interpolated.append([*feat[-1], *ResNet_feat[position + self.window_size_frame - 1]])
+        feat_interpolated.append([*((feat[-2] + feat[-1]) / 2), *ResNet_feat[position + self.window_size_frame]])
+
+        return np.array(feat_interpolated), self.all_labels[index].astype(np.float32)
+
+    def __len__(self):
+        return len(self.all_labels)
