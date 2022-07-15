@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/code/MixSaT/main.py", line 379, in <module>
-    main(args)
-  File "/code/MixSaT/main.py", line 310, in main
-    litModel = LitModel(model, args)
