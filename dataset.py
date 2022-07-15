@@ -181,10 +181,10 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
         for game in tqdm(self.listGames):
             # Load features
             len_half1 = np.load(os.path.join(
-                self.path, game, "1_" + self.features)).shape[0]
-            len_half1 = len(np.arange(0, len_half1 - 1, self.stride))
+                self.path, game, "1_" + self.ResNet_features)).shape[0]
+            len_half1 = len(np.arange(0,  len_half1 - 1, self.stride))
             len_half2 = np.load(os.path.join(
-                self.path, game, "2_" + self.features)).shape[0]
+                self.path, game, "2_" + self.ResNet_features)).shape[0]
             len_half2 = len(np.arange(0, len_half2 - 1, self.stride))
             # self.game_length.append([len_half1, len_half2])
 
@@ -282,6 +282,7 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
         feat_interpolated[::2] = feat[:self.window_size] # feat_interpolated[0,2,4] = feat[1,2,3]
         feat_interpolated[1::2] = (feat[:self.window_size:] + feat[1:self.window_size + 1:])/2  # feat_interpolated[1,3,5] = feat[0,1,2] + feat[1,2,3] / 2
         feat = np.concatenate((feat_interpolated[::], ResNet_feat[position:position+self.window_size_frame]), axis=1) # feat = concat feat_interpolated & resnet
+
         # for i in range(self.window_size - 1):
         #     feat_interpolated.append([*feat[i], *ResNet_feat[position + i]])
         #     feat_interpolated.append([*((feat[i] + feat[i + 1]) / 2), *ResNet_feat[position + i + 1]])
