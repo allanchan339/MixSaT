@@ -154,8 +154,8 @@ class SoccerNetClipsTesting(Dataset):
 
 class SoccerNetClipsNoCache_SlidingWindow(Dataset):
     def __init__(self, path, features="baidu_soccer_embeddings.npy", features2="ResNET_TF2.npy", split=["train"],
-                 version=1,
-                 framerate=2, window_size=15, overlap=True, fast_dev=False):
+                 version=2,
+                 framerate=2, window_size=3, overlap=True, fast_dev=False):
         self.path = path
         self.listGames = getListGames(split)[:5] if fast_dev else getListGames(split)
         self.features = features
@@ -249,10 +249,7 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
             # self.save_clip.append(save_label_position)
         self.all_labels = np.array(self.all_labels)
 
-        # # logging.info("Checking/Download features and labels locally")
-        # downloader = SoccerNetDownloader(path)
-        # downloader.downloadGames(files=[
-        #     self.labels, f"1_{self.features}", f"2_{self.features}"], split=split, verbose=False, randomized=True)
+        location = np.where(self.all_labels == 1)
 
     def __getitem__(self, index):
         """
@@ -293,3 +290,7 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
 
     def __len__(self):
         return len(self.all_labels)
+
+if __name__ == "__main__":
+    da = SoccerNetClipsNoCache_SlidingWindow("/hdda/Datasets/SoccerNet")
+    x = da[1]
