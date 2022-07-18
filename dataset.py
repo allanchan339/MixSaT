@@ -154,7 +154,7 @@ class SoccerNetClipsTesting(Dataset):
 
 class SoccerNetClipsNoCache_SlidingWindow(Dataset):
     def __init__(self, path, features="baidu_soccer_embeddings.npy", features2="ResNET_TF2.npy", split=["train"],
-                 version=2,
+                 version=1,
                  framerate=2, window_size=3, overlap=True, fast_dev=False):
         self.path = path
         self.listGames = getListGames(split)[:5] if fast_dev else getListGames(split)
@@ -248,8 +248,10 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
 
             # self.save_clip.append(save_label_position)
         self.all_labels = np.array(self.all_labels)
-
-        location = np.where(self.all_labels == 1)
+        # # logging.info("Checking/Download features and labels locally")
+        # downloader = SoccerNetDownloader(path)
+        # downloader.downloadGames(files=[
+        #     self.labels, f"1_{self.features}", f"2_{self.features}"], split=split, verbose=False, randomized=True)
 
     def __getitem__(self, index):
         """
@@ -278,7 +280,7 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
         feat_interpolated = np.copy(feat)   # Copy feat into feat_interpolated
         feat_interpolated[::2] = feat[:self.window_size] # feat_interpolated[0,2,4] = feat[1,2,3]
         feat_interpolated[1::2] = (feat[:self.window_size:] + feat[1:self.window_size + 1:])/2  # feat_interpolated[1,3,5] = feat[0,1,2] + feat[1,2,3] / 2
-        feat = np.concatenate((feat_interpolated[::], ResNet_feat[position:position+self.window_size_frame]), axis=1) # feat = concat feat_interpolated & resnet
+        feat = np.concatenate((feat_interpolated[::], ResNet_feat[idxs, ...]), axis=1) # feat = concat feat_interpolated & resnet
 
         # for i in range(self.window_size - 1):
         #     feat_interpolated.append([*feat[i], *ResNet_feat[position + i]])
