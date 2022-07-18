@@ -53,7 +53,7 @@ parser.add_argument('--log_every_n_steps', type=int, default=10,
 
 # Data loading args
 parser.add_argument('--batch_size', dest='batch_size',
-                    type=int, default=134*2, help='number of samples in one batch')
+                    type=int, default=134, help='number of samples in one batch')
 parser.add_argument('--SoccerNet_path', required=False, type=str,
                     default="/hdda/Datasets/SoccerNet",
                     help='directory for dataset')
