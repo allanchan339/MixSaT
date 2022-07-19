@@ -53,12 +53,12 @@ parser.add_argument('--log_every_n_steps', type=int, default=10,
 
 # Data loading args
 parser.add_argument('--batch_size', dest='batch_size',
-                    type=int, default=64, help='number of samples in one batch')
+                    type=int, default=134, help='number of samples in one batch')
 parser.add_argument('--SoccerNet_path', required=False, type=str,
                     default="/hdda/Datasets/SoccerNet",
                     help='directory for dataset')
 parser.add_argument('--features', required=False, type=str,
-                    default="baidu_soccer_embeddings.npy", help='Video features')  # baidu_soccer_embeddings.npy
+                    default="baidu_ResNET_concat.npy", help='Video features')  # baidu_soccer_embeddings.npy
 parser.add_argument('--split_train', nargs='+',
                     default=["train"], help='list of split for training')
 parser.add_argument('--split_valid', nargs='+',
