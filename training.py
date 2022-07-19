@@ -65,11 +65,7 @@ class LitModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         feat, label = batch
-        if self.args.masking_epoch == 0 or self.args.masking_ratio == 0.0:
-            output = self.model(feat)
-        else:
-            self.model.update_epoch(self.trainer.current_epoch)
-            output = self.model(feat)
+        output = self.model(feat)
 
         loss = self.criterion(output, label)
         self.log("Train/Loss", loss, on_step=True, on_epoch=True, logger=True)
@@ -148,17 +144,6 @@ class LitModel(pl.LightningModule):
             self.log('Valid/AP', AP_dictionary, logger=True, prog_bar=False,
                      )
 
-        # def _valid_epoch_end_ddp2(validation_step_outputs):
-        #     AP =[]
-        #     for metric in self.metrics:
-        #         AP.append(metric.compute())
-        #         metric.reset()
-
-        #     mAP = torch.mean(torch.FloatTensor(AP))
-
-        #     print(mAP)
-
-        #if self.trainer.strategy.strategy_name == 'ddp':
         if self.args.strategy in ['ddp', 'ddp_sharded']:
 
             validation_step_outputs = self.all_gather(validation_step_outputs)

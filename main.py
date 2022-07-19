@@ -1,22 +1,16 @@
 import pytorch_lightning as pl
+import torch
 import argparse
 import numpy as np
-from model import *
 from training import LitModel
 from dataLoading import LitDataModule
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint, LearningRateMonitor, ModelSummary, Timer, \
     RichProgressBar, StochasticWeightAveraging
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from model_twins_original import TwinsSVT
 from model_twins_1d import TwinsSVT_1d  # 0
 from model_twins_1d_group import TwinsSVT_1d_group  # 1
-from model_twins_1d_LoGlo import TwinsSVT_1d_LoGlo  # 2
 from model_twins_1d_SE import TwinsSVT_1d_SE  # 3
-from model_twins_1d_group_LoGlo import TwinsSVT_1d_group_LoGlo  # 12
 from model_twins_1d_group_SE import TwinsSVT_1d_group_SE  # 13
-from model_twins_1d_LoGlo_SE import TwinsSVT_1d_LoGlo_SE  # 23
-from model_twins_1d_group_LoGlo_SE import TwinsSVT_1d_group_LoGlo_SE  # 123
-
 from pytorch_lightning.profiler import SimpleProfiler, AdvancedProfiler
 from freegpu import find_gpus
 import os
@@ -108,15 +102,9 @@ parser.add_argument('--NMS_threshold', required=False, type=float,
 
 # loss function args
 parser.add_argument('--criterion', required=False, type=str,
-                    default="BCELoss", help='loss function: [SigmoidFocalLoss, BCELoss] ')
+                    default="SigmoidFocalLoss", help='loss function: [SigmoidFocalLoss, BCELoss]')
 parser.add_argument('--weight', default=None, type=float,
                     help='loss function reduction on None class; None = not use')
-
-# model ViT_mask args
-parser.add_argument('--masking_ratio', required=False, type=float,
-                    default=0.0, help='number of masking_ratio to transformer, frame = int(masking_ratio*windows_size)')
-parser.add_argument('--masking_epoch', default=0, type=int,
-                    help='the starting epoch to enable temporal masking, 0 = not use')
 
 # control arguments, affect performance and training process on development
 parser.add_argument('--test_only', default=False, required=False,
@@ -146,7 +134,7 @@ parser.add_argument('--project', default='MixSaT',
                     type=str, help='project for wandb')
 parser.add_argument('--entity', default='cihe-cis',
                     type=str, help='organization used in wandb')
-parser.add_argument('--experiment_name', default='New Loss Test',
+parser.add_argument('--experiment_name', default='Concat feature Test',
                     type=str, help='experiment name for wandb')
 
 # model TwinsSVT args
@@ -160,10 +148,8 @@ parser.add_argument('--s2_patch_size', default=4, type=int)
 parser.add_argument('--s2_local_patch_size', default=4, type=int)
 parser.add_argument('--s2_global_k', default=20, type=int)
 parser.add_argument('--s2_depth', default=2, type=int)
-
 parser.add_argument('--peg_kernel_size', default=9, type=int)
 parser.add_argument('--dropout', default=0., type=float)
-
 parser.add_argument('--Post_norm', required=False, type=bool,
                     default=False, help='False to use PreNorm, True to use PostNorm')
 
@@ -172,18 +158,7 @@ def main(args):
     logger = WandbLogger(name=args.experiment_name,
                          project=args.project, entity=args.entity)
 
-    if args.model_name == 'VIT':
-        if args.masking_ratio > 0.0:
-            # TODO: two model can combine, should combine
-            model = SimpleViT_Mask(patch_size=args.framerate * args.window_size, num_classes=18, dim=8576,
-                                   depth=8, heads=16, mlp_dim=1000, dim_head=64, masking_ratio=args.masking_ratio,
-                                   masking_epoch=args.masking_epoch)
-        else:
-            model = SimpleViT(patch_size=args.framerate * args.window_size, num_classes=18, dim=8576,
-                              depth=8, heads=16, mlp_dim=1000, dim_head=64)
-    # elif args.model_name == 'TwinsSVT_2d':    # No you
-    #     model = TwinsSVT(num_classes=18, frame_size=args.framerate * args.window_size)
-    elif args.model_name == 'TwinsSVT_1d':
+    if args.model_name == 'TwinsSVT_1d':
         model = TwinsSVT_1d(num_classes=18, frames_size=args.framerate * args.window_size,
                             s1_next_dim=args.s1_next_dim,
                             s1_patch_size=args.s1_patch_size,
@@ -199,6 +174,21 @@ def main(args):
                             dropout=args.dropout,
                             Post_norm=args.Post_norm
                             )
+    elif args.model_name == 'TwinsSVT_1d_SE':  # 3
+        model = TwinsSVT_1d_SE(num_classes=18, frames_size=args.framerate * args.window_size,
+                               s1_next_dim=args.s1_next_dim,
+                               s1_patch_size=args.s1_patch_size,
+                               s1_local_patch_size=args.s1_local_patch_size,
+                               s1_global_k=args.s1_global_k,
+                               s1_depth=args.s1_depth,
+                               s2_next_dim=args.s2_next_dim,
+                               s2_patch_size=args.s2_patch_size,
+                               s2_local_patch_size=args.s2_local_patch_size,
+                               s2_global_k=args.s2_global_k,
+                               s2_depth=args.s2_depth,
+                               peg_kernel_size=args.peg_kernel_size,
+                               dropout=args.dropout,
+                               Post_norm=args.Post_norm)
     elif args.model_name == 'TwinsSVT_1d_group':  # 1
         model = TwinsSVT_1d_group(num_classes=18, frames_size=args.framerate * args.window_size,
                                   s1_next_dim=args.s1_next_dim,
@@ -215,36 +205,6 @@ def main(args):
                                   dropout=args.dropout,
                                   Post_norm=args.Post_norm
                                   )
-    elif args.model_name == 'TwinsSVT_1d_group_LoGlo':  # 12
-        model = TwinsSVT_1d_group_LoGlo(num_classes=18, frames_size=args.framerate * args.window_size,
-                                        s1_next_dim=args.s1_next_dim,
-                                        s1_patch_size=args.s1_patch_size,
-                                        s1_local_patch_size=args.s1_local_patch_size,
-                                        s1_global_k=args.s1_global_k,
-                                        s1_depth=args.s1_depth,
-                                        s2_next_dim=args.s2_next_dim,
-                                        s2_patch_size=args.s2_patch_size,
-                                        s2_local_patch_size=args.s2_local_patch_size,
-                                        s2_global_k=args.s2_global_k,
-                                        s2_depth=args.s2_depth,
-                                        peg_kernel_size=args.peg_kernel_size,
-                                        dropout=args.dropout,
-                                        Post_norm=args.Post_norm)
-    elif args.model_name == 'TwinsSVT_1d_LoGlo':  # 2
-        model = TwinsSVT_1d_LoGlo(num_classes=18, frames_size=args.framerate * args.window_size,
-                                  s1_next_dim=args.s1_next_dim,
-                                  s1_patch_size=args.s1_patch_size,
-                                  s1_local_patch_size=args.s1_local_patch_size,
-                                  s1_global_k=args.s1_global_k,
-                                  s1_depth=args.s1_depth,
-                                  s2_next_dim=args.s2_next_dim,
-                                  s2_patch_size=args.s2_patch_size,
-                                  s2_local_patch_size=args.s2_local_patch_size,
-                                  s2_global_k=args.s2_global_k,
-                                  s2_depth=args.s2_depth,
-                                  peg_kernel_size=args.peg_kernel_size,
-                                  dropout=args.dropout,
-                                  Post_norm=args.Post_norm)
     elif args.model_name == 'TwinsSVT_1d_group_SE':  # 13
         model = TwinsSVT_1d_group_SE(num_classes=18, frames_size=args.framerate * args.window_size,
                                      s1_next_dim=args.s1_next_dim,
@@ -260,51 +220,7 @@ def main(args):
                                      peg_kernel_size=args.peg_kernel_size,
                                      dropout=args.dropout,
                                      Post_norm=args.Post_norm)
-    elif args.model_name == 'TwinsSVT_1d_SE':  # 3
-        model = TwinsSVT_1d_SE(num_classes=18, frames_size=args.framerate * args.window_size,
-                               s1_next_dim=args.s1_next_dim,
-                               s1_patch_size=args.s1_patch_size,
-                               s1_local_patch_size=args.s1_local_patch_size,
-                               s1_global_k=args.s1_global_k,
-                               s1_depth=args.s1_depth,
-                               s2_next_dim=args.s2_next_dim,
-                               s2_patch_size=args.s2_patch_size,
-                               s2_local_patch_size=args.s2_local_patch_size,
-                               s2_global_k=args.s2_global_k,
-                               s2_depth=args.s2_depth,
-                               peg_kernel_size=args.peg_kernel_size,
-                               dropout=args.dropout,
-                               Post_norm=args.Post_norm)
-    elif args.model_name == 'TwinsSVT_1d_LoGlo_SE':  # 23
-        model = TwinsSVT_1d_LoGlo_SE(num_classes=18, frames_size=args.framerate * args.window_size,
-                                     s1_next_dim=args.s1_next_dim,
-                                     s1_patch_size=args.s1_patch_size,
-                                     s1_local_patch_size=args.s1_local_patch_size,
-                                     s1_global_k=args.s1_global_k,
-                                     s1_depth=args.s1_depth,
-                                     s2_next_dim=args.s2_next_dim,
-                                     s2_patch_size=args.s2_patch_size,
-                                     s2_local_patch_size=args.s2_local_patch_size,
-                                     s2_global_k=args.s2_global_k,
-                                     s2_depth=args.s2_depth,
-                                     peg_kernel_size=args.peg_kernel_size,
-                                     dropout=args.dropout,
-                                     Post_norm=args.Post_norm)
-    elif args.model_name == 'TwinsSVT_1d_group_LoGlo_SE':  # 123
-        model = TwinsSVT_1d_group_LoGlo_SE(num_classes=18, frames_size=args.framerate * args.window_size,
-                                           s1_next_dim=args.s1_next_dim,
-                                           s1_patch_size=args.s1_patch_size,
-                                           s1_local_patch_size=args.s1_local_patch_size,
-                                           s1_global_k=args.s1_global_k,
-                                           s1_depth=args.s1_depth,
-                                           s2_next_dim=args.s2_next_dim,
-                                           s2_patch_size=args.s2_patch_size,
-                                           s2_local_patch_size=args.s2_local_patch_size,
-                                           s2_global_k=args.s2_global_k,
-                                           s2_depth=args.s2_depth,
-                                           peg_kernel_size=args.peg_kernel_size,
-                                           dropout=args.dropout,
-                                           Post_norm=args.Post_norm)
+    
 
     # if args.ckpt_path is None:
     litModel = LitModel(model, args)
@@ -318,8 +234,6 @@ def main(args):
         # our model checkpoint callback
         ModelCheckpoint(
             monitor='Valid/mAP', mode='max'),
-        # ImagePredictionLogger(
-        #     val_samples=val_sample, num_samples=1),
         ModelSummary(max_depth=-1),
         LearningRateMonitor(),
         RichProgressBar(),

@@ -2,3 +2,4 @@ MixSaT
 SoccerViTAC
 wandb/**
 __pycache__/**
+.vscode/launch.json
