@@ -1,6 +1,6 @@
 import pytorch_lightning as pl
 from torch import nn
-from loss import NLLLoss
+from loss import NLLLoss, SigmoidFocalLoss
 import numpy as np
 import torch
 from SoccerNet.Evaluation.utils import AverageMeter, EVENT_DICTIONARY_V2, INVERSE_EVENT_DICTIONARY_V2
@@ -31,11 +31,8 @@ class LitModel(pl.LightningModule):
             else:
                 self.criterion = nn.BCELoss()
 
-            # Combine sigmoid + BCELoss
-        elif self.args.criterion == 'CELoss':
-            self.criterion = nn.CrossEntropyLoss()
-            # only good when outputs class is mutully exclausive, two actions in one output is not allowed
-            # If you are using torch.nn.CrossEntropyLoss, you shouldn't use F.softmax on your model's output. That's because CrossEntropyLoss includes nn.LogSoftmax() and nn.NLLLoss().
+        elif self.args.criterion == 'SigmoidFocalLoss':
+            self.criterion = SigmoidFocalLoss()
 
     def forward(self, x):  # used to write pipeline from input to output
         y = self.model(x)
@@ -76,7 +73,6 @@ class LitModel(pl.LightningModule):
 
         loss = self.criterion(output, label)
         self.log("Train/Loss", loss, on_step=True, on_epoch=True, logger=True)
-
         return loss
 
     def validation_epoch_end(self, validation_step_outputs):

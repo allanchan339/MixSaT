@@ -58,7 +58,7 @@ parser.add_argument('--SoccerNet_path', required=False, type=str,
                     default="/hdda/Datasets/SoccerNet",
                     help='directory for dataset')
 parser.add_argument('--features', required=False, type=str,
-                    default="baidu_ResNET_concat.npy", help='Video features')  # baidu_soccer_embeddings.npy
+                    default="baidu_ResNET_concat.npy", help='Video features [baidu_soccer_embeddings.npy, baidu_ResNET_concat.npy]')  # baidu_soccer_embeddings.npy
 parser.add_argument('--split_train', nargs='+',
                     default=["train"], help='list of split for training')
 parser.add_argument('--split_valid', nargs='+',
@@ -108,7 +108,7 @@ parser.add_argument('--NMS_threshold', required=False, type=float,
 
 # loss function args
 parser.add_argument('--criterion', required=False, type=str,
-                    default="BCELoss", help='loss function')
+                    default="BCELoss", help='loss function: [SigmoidFocalLoss, BCELoss] ')
 parser.add_argument('--weight', default=None, type=float,
                     help='loss function reduction on None class; None = not use')
 
@@ -146,7 +146,7 @@ parser.add_argument('--project', default='MixSaT',
                     type=str, help='project for wandb')
 parser.add_argument('--entity', default='cihe-cis',
                     type=str, help='organization used in wandb')
-parser.add_argument('--experiment_name', default='Concat_sliding_testing',
+parser.add_argument('--experiment_name', default='New Loss Test',
                     type=str, help='experiment name for wandb')
 
 # model TwinsSVT args
