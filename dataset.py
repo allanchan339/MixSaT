@@ -154,6 +154,10 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
         self.split = split
         self.version = version
         self.stride = stride
+        if features == "baidu_ResNET_concat.npy":
+            self.feature_name = "ResNET_TF2.npy"
+        else:
+            self.feature_name = features
         if version == 1:
             self.num_classes = 3
             self.labels = "Labels.json"
@@ -169,10 +173,10 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
         for game in tqdm(self.listGames):
             # Load features
             len_half1 = np.load(os.path.join(
-                self.path, game, "1_" + "ResNET_TF2.npy")).shape[0]
+                self.path, game, "1_" + self.feature_name)).shape[0]
             len_half1 = len(np.arange(0,  len_half1 - 1, self.stride))
             len_half2 = np.load(os.path.join(
-                self.path, game, "2_" + "ResNET_TF2.npy")).shape[0]
+                self.path, game, "2_" + self.feature_name)).shape[0]
             len_half2 = len(np.arange(0, len_half2 - 1, self.stride))
             # self.game_length.append([len_half1, len_half2])
 
