@@ -58,7 +58,7 @@ parser.add_argument('--SoccerNet_path', required=False, type=str,
                     default="/hdda/Datasets/SoccerNet",
                     help='directory for dataset')
 parser.add_argument('--features', required=False, type=str,
-                    default="baidu_soccer_embeddings.npy", help='Video features')  # baidu_soccer_embeddings.npy
+                    default="baidu_ResNET_concat.npy", help='Video features')  # baidu_soccer_embeddings.npy
 parser.add_argument('--split_train', nargs='+',
                     default=["train"], help='list of split for training')
 parser.add_argument('--split_valid', nargs='+',
@@ -100,7 +100,7 @@ parser.add_argument('--window_size', required=False, type=int,
 parser.add_argument('--window_shift', required=False, type=int,
                     default=0, help='Shift window RHS when slide by slide window data loading')
 parser.add_argument('--window_stride', required=False, type=int,
-                    default=1, help='1: Load data frame by frame')
+                    default=3, help='1: Load data frame by frame')
 parser.add_argument('--NMS_window', required=False,
                     type=int, default=6, help='NMS window in second')
 parser.add_argument('--NMS_threshold', required=False, type=float,

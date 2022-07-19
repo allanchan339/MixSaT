@@ -46,7 +46,7 @@ def feats2clip(feats, stride, clip_length, padding="replicate_last", off=0, off_
 
 class SoccerNetClipsTesting(Dataset):
     def __init__(self, path, features="ResNET_PCA512.npy", split=["test"],
-                 version=1, framerate=2, window_size=15):
+                 version=2, framerate=2, window_size=3):
         self.path = path
         self.listGames = getListGames(split)
         self.features = features
@@ -62,16 +62,6 @@ class SoccerNetClipsTesting(Dataset):
             self.dict_event = EVENT_DICTIONARY_V2
             self.num_classes = 17
             self.labels = "Labels-v2.json"
-
-        # logging.info("Checking/Download features and labels locally")
-        # downloader = SoccerNetDownloader(path)
-        # for s in split:
-        #     if s == "challenge":
-        #         downloader.downloadGames(files=[f"1_{self.features}", f"2_{self.features}"], split=[
-        #             s], verbose=False, randomized=True)
-        #     else:
-        #         downloader.downloadGames(files=[self.labels, f"1_{self.features}", f"2_{self.features}"], split=[
-        #             s], verbose=False, randomized=True)
 
     def __getitem__(self, index):
         """
@@ -153,19 +143,17 @@ class SoccerNetClipsTesting(Dataset):
 
 
 class SoccerNetClipsNoCache_SlidingWindow(Dataset):
-    def __init__(self, path, features="baidu_soccer_embeddings.npy", features2="ResNET_TF2.npy", split=["train"],
-                 version=1,
-                 framerate=2, window_size=3, overlap=True, fast_dev=False):
+    def __init__(self, path, features="baidu_ResNET_concat.npy", split=["train"],
+                 version=2, stride=1,
+                 framerate=2, window_size=3, fast_dev=False):
         self.path = path
         self.listGames = getListGames(split)[:5] if fast_dev else getListGames(split)
         self.features = features
-        self.ResNet_features = features2
-        self.window_size = window_size
         self.window_size_frame = window_size * framerate
         self.framerate = framerate
         self.split = split
         self.version = version
-        self.stride = self.window_size_frame if not overlap else 1
+        self.stride = stride
         if version == 1:
             self.num_classes = 3
             self.labels = "Labels.json"
@@ -181,10 +169,10 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
         for game in tqdm(self.listGames):
             # Load features
             len_half1 = np.load(os.path.join(
-                self.path, game, "1_" + self.ResNet_features)).shape[0]
+                self.path, game, "1_" + "ResNET_TF2.npy")).shape[0]
             len_half1 = len(np.arange(0,  len_half1 - 1, self.stride))
             len_half2 = np.load(os.path.join(
-                self.path, game, "2_" + self.ResNet_features)).shape[0]
+                self.path, game, "2_" + "ResNET_TF2.npy")).shape[0]
             len_half2 = len(np.arange(0, len_half2 - 1, self.stride))
             # self.game_length.append([len_half1, len_half2])
 
@@ -246,13 +234,6 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
                     self.all_labels.append((label_half2[i]))
                     self.save_label_position.append([game, '2_', i])
 
-            # self.save_clip.append(save_label_position)
-        self.all_labels = np.array(self.all_labels)
-        # # logging.info("Checking/Download features and labels locally")
-        # downloader = SoccerNetDownloader(path)
-        # downloader.downloadGames(files=[
-        #     self.labels, f"1_{self.features}", f"2_{self.features}"], split=split, verbose=False, randomized=True)
-
     def __getitem__(self, index):
         """
             Args:
@@ -269,24 +250,10 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
         # Load features
         feat = np.load(os.path.join(
             self.path, game, half + self.features), mmap_mode='r')
-        ResNet_feat = np.load(os.path.join(
-            self.path, game, half + self.ResNet_features))
-        ResNet_feat = ResNet_feat.reshape((-1, ResNet_feat.shape[-1]))
         feat = feat.reshape(-1, feat.shape[-1])
         idxs = np.arange(position * self.window_size_frame, (position + 1) * self.window_size_frame)
         idxs = np.clip(idxs, position * self.window_size_frame, feat.shape[0] - 1)
         feat = feat[idxs, ...]
-
-        feat_interpolated = np.copy(feat)   # Copy feat into feat_interpolated
-        feat_interpolated[::2] = feat[:self.window_size] # feat_interpolated[0,2,4] = feat[1,2,3]
-        feat_interpolated[1::2] = (feat[:self.window_size:] + feat[1:self.window_size + 1:])/2  # feat_interpolated[1,3,5] = feat[0,1,2] + feat[1,2,3] / 2
-        feat = np.concatenate((feat_interpolated[::], ResNet_feat[idxs, ...]), axis=1) # feat = concat feat_interpolated & resnet
-
-        # for i in range(self.window_size - 1):
-        #     feat_interpolated.append([*feat[i], *ResNet_feat[position + i]])
-        #     feat_interpolated.append([*((feat[i] + feat[i + 1]) / 2), *ResNet_feat[position + i + 1]])
-        # feat_interpolated.append([*feat[-1], *ResNet_feat[position + self.window_size_frame - 1]])
-        # feat_interpolated.append([*((feat[-2] + feat[-1]) / 2), *ResNet_feat[position + self.window_size_frame]])
 
         return feat, self.all_labels[index].astype(np.float32)
 
