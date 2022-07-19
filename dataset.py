@@ -144,7 +144,7 @@ class SoccerNetClipsTesting(Dataset):
 
 class SoccerNetClipsNoCache_SlidingWindow(Dataset):
     def __init__(self, path, features="baidu_ResNET_concat.npy", split=["train"],
-                 version=2,
+                 version=2, stride=1,
                  framerate=2, window_size=3, fast_dev=False):
         self.path = path
         self.listGames = getListGames(split)[:5] if fast_dev else getListGames(split)
@@ -153,7 +153,7 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
         self.framerate = framerate
         self.split = split
         self.version = version
-        self.stride = 1
+        self.stride = stride
         if version == 1:
             self.num_classes = 3
             self.labels = "Labels.json"

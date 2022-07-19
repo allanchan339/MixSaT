@@ -100,7 +100,7 @@ parser.add_argument('--window_size', required=False, type=int,
 parser.add_argument('--window_shift', required=False, type=int,
                     default=0, help='Shift window RHS when slide by slide window data loading')
 parser.add_argument('--window_stride', required=False, type=int,
-                    default=1, help='1: Load data frame by frame')
+                    default=3, help='1: Load data frame by frame')
 parser.add_argument('--NMS_window', required=False,
                     type=int, default=6, help='NMS window in second')
 parser.add_argument('--NMS_threshold', required=False, type=float,
