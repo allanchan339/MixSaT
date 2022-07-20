@@ -144,7 +144,7 @@ class SoccerNetClipsTesting(Dataset):
 
 class SoccerNetClipsNoCache_SlidingWindow(Dataset):
     def __init__(self, path, features="baidu_ResNET_concat.npy", split=["train"],
-                 version=2, stride=1,
+                 version=2, stride=3,
                  framerate=2, window_size=3, fast_dev=False):
         self.path = path
         self.listGames = getListGames(split)[:5] if fast_dev else getListGames(split)
@@ -255,8 +255,8 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
         feat = np.load(os.path.join(
             self.path, game, half + self.features), mmap_mode='r')
         feat = feat.reshape(-1, feat.shape[-1])
-        idxs = np.arange(position * self.window_size_frame, (position + 1) * self.window_size_frame)
-        idxs = np.clip(idxs, position * self.window_size_frame, feat.shape[0] - 1)
+        idxs = np.arange(position * self.stride, position * self.stride + self.window_size_frame)
+        idxs = np.clip(idxs, position * self.stride + self.window_size_frame, feat.shape[0] - 1)
         feat = feat[idxs, ...]
 
         return feat, self.all_labels[index].astype(np.float32)
@@ -267,3 +267,4 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
 if __name__ == "__main__":
     da = SoccerNetClipsNoCache_SlidingWindow("/hdda/Datasets/SoccerNet")
     x = da[1]
+    print(x)
