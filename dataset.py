@@ -256,7 +256,7 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
             self.path, game, half + self.features), mmap_mode='r')
         feat = feat.reshape(-1, feat.shape[-1])
         idxs = np.arange(position * self.stride, position * self.stride + self.window_size_frame)
-        idxs = np.clip(idxs, position * self.stride + self.window_size_frame, feat.shape[0] - 1)
+        idxs = np.clip(idxs, position * self.stride, feat.shape[0] - 1)
         feat = feat[idxs, ...]
 
         return feat, self.all_labels[index].astype(np.float32)
@@ -266,5 +266,5 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
 
 if __name__ == "__main__":
     da = SoccerNetClipsNoCache_SlidingWindow("/hdda/Datasets/SoccerNet")
-    x = da[1]
+    x = da[5]
     print(x)
