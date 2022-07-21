@@ -102,7 +102,7 @@ parser.add_argument('--NMS_threshold', required=False, type=float,
 
 # loss function args
 parser.add_argument('--criterion', required=False, type=str,
-                    default="SigmoidFocalLoss", help='loss function: [SigmoidFocalLoss, BCELoss]')
+                    default="BCELoss", help='loss function: [SigmoidFocalLoss, BCELoss]')
 parser.add_argument('--weight', default=None, type=float,
                     help='loss function reduction on None class; None = not use')
 
@@ -280,7 +280,7 @@ def main(args):
 if __name__ == '__main__':
     args = parser.parse_args()
     if not os.path.exists(
-            args.SoccerNet_path):
+            args.SoccerNet_path) or  torch.cuda.device_count() > 2:
         args.SoccerNet_path = '/code/Datasets/SoccerNet'
 
     if (args.ckpt_path is not None) and (not os.path.exists(args.ckpt_path)):
