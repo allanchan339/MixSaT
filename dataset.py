@@ -210,9 +210,9 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
                             continue
                         label = self.dict_event[event]
 
-                    if half == 1 and frame // self.window_size_frame >= label_half1.shape[0]:
+                    if half == 1 and frame // self.stride >= label_half1.shape[0]:
                         continue  # skip loop if condition meets
-                    if half == 2 and frame // self.window_size_frame >= label_half2.shape[0]:
+                    if half == 2 and frame // self.stride >= label_half2.shape[0]:
                         continue
 
                     # Ignore non-visibility label
@@ -221,12 +221,12 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
                     #         continue
 
                     if half == 1:  # if on label.json
-                        frame = min(frame, len_half1 - 1)
+                        # frame = min(frame, len_half1 - 1)
                         label_half1[frame // self.stride][0] = 0
                         label_half1[frame // self.stride][label + 1] = 1
 
                     if half == 2:
-                        frame = min(frame, len_half2 - 1)
+                        # frame = min(frame, len_half2 - 1)
                         label_half2[frame // self.stride][0] = 0
                         label_half2[frame // self.stride][label + 1] = 1
 
@@ -266,5 +266,5 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
 
 if __name__ == "__main__":
     da = SoccerNetClipsNoCache_SlidingWindow("/hdda/Datasets/SoccerNet")
-    x = da[5]
+    x = da[1799]
     print(x)
