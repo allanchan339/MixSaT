@@ -2,8 +2,8 @@ import pytorch_lightning as pl
 import torch
 import argparse
 import numpy as np
-from training import LitModel
-from dataLoading import LitDataModule
+from training import LitModel, SpotMatchingModel
+from dataLoading import LitDataModule, SpotMatchingDataModule
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint, LearningRateMonitor, ModelSummary, Timer, \
     RichProgressBar, StochasticWeightAveraging
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
@@ -18,6 +18,10 @@ from pytorch_lightning.loggers import WandbLogger
 from parseAction import ParseStr2List
 
 parser = argparse.ArgumentParser()
+
+# train spot matching route
+parser.add_argument('--SpotMatching', default=True, required=False, action='store_true', help='to switch to spotmatching training path')
+parser.add_argument('--backbone_path', default='MixSaT/Focal2fps/epoch=11-step=12324.ckpt', help='to describe the backbone weighting')
 
 # pytorch_lightning trainer args
 parser.add_argument('--deterministic', default=True, required=False,
@@ -102,7 +106,7 @@ parser.add_argument('--NMS_threshold', required=False, type=float,
 
 # loss function args
 parser.add_argument('--criterion', required=False, type=str,
-                    default="BCELoss", help='loss function: [SigmoidFocalLoss, BCELoss]')
+                    default="BinaryFocalLoss", help='loss function: [SigmoidFocalLoss, BCELoss, BinaryFocalLoss]')
 parser.add_argument('--weight', default=None, type=float,
                     help='loss function reduction on None class; None = not use')
 
@@ -134,7 +138,7 @@ parser.add_argument('--project', default='MixSaT',
                     type=str, help='project for wandb')
 parser.add_argument('--entity', default='cihe-cis',
                     type=str, help='organization used in wandb')
-parser.add_argument('--experiment_name', default='Concat feature Test',
+parser.add_argument('--experiment_name', default='Valid mAP Test + BinFocal + SWA',
                     type=str, help='experiment name for wandb')
 
 # model TwinsSVT args
@@ -221,14 +225,18 @@ def main(args):
                                      dropout=args.dropout,
                                      Post_norm=args.Post_norm)
     
+    if args.SpotMatching:
+        litModel = LitModel.load_from_checkpoint(model = model, checkpoint_path=args.backbone_path)
+        model = litModel.model # weighting loaded
+        model.eval() # declare not train
+        litModel = SpotMatchingModel(model, args)
+    else:
+        litModel = LitModel(model, args)
 
-    # if args.ckpt_path is None:
-    litModel = LitModel(model, args)
-    # else:
-    #     litModel = LitModel(model, args).load_from_checkpoint(
-    #         checkpoint_path=args.ckpt_path)
-
-    dataModule = LitDataModule(args)
+    if args.SpotMatching:
+        dataModule = SpotMatchingDataModule(args)
+    else:
+        dataModule = LitDataModule(args)
 
     callbacks = [
         # our model checkpoint callback
@@ -238,6 +246,7 @@ def main(args):
         LearningRateMonitor(),
         RichProgressBar(),
         EarlyStopping(monitor='Valid/mAP', mode='max', patience=args.patience),
+        StochasticWeightAveraging(swa_lrs=args.lrE)
     ]
 
     if not args.test_only:

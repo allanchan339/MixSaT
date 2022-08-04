@@ -59,3 +59,39 @@ class SigmoidFocalLoss(torch.nn.Module):
             loss = loss.sum()
 
         return loss
+
+class BinaryFocalLoss(torch.nn.Module):
+    def __init__(self, gamma = 2, *, pos_weight = None, from_logits=False, label_smoothing=None, reduction="mean", **kwargs) -> None:
+        super().__init__()
+        self.gamma = gamma 
+        self.pos_weight = pos_weight
+        self.from_logits = from_logits
+        self.label_smoothing = label_smoothing
+        self.reduction = reduction
+        
+    def forward(self, inputs, targets):
+        p = inputs
+        q = 1 - p
+        eps=torch.tensor(1e-10)
+
+        # avoid take log from 0
+        p = torch.maximum(p, eps)
+        q = torch.maximum(q, eps)
+
+        pos_loss = -(q ** self.gamma) * torch.log(p)
+        if self.pos_weight is not None:
+            pos_loss *= self.pos_weight
+        
+        neg_loss = -(p ** self.gamma) * torch.log(q)
+
+        labels = targets.bool()
+        loss = torch.where(labels, pos_loss, neg_loss)
+
+        if self.reduction == "mean":
+            return torch.mean(loss)
+
+        elif self.reduction == "sum":
+            return torch.sum(loss)
+        
+        else:
+            return loss

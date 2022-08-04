@@ -462,10 +462,13 @@ class TwinsSVT_1d_group_SE(nn.Module):
 
 
 if __name__ == '__main__':
-    input = torch.randn(10, 3, 8576) # batch, window, length
-    model = TwinsSVT_1d_group_LoGlo_SE(num_classes=18, frames_size=3)
-    model.eval()
-    output = model(input)
-    print(output.shape)
+    input = torch.randn(10, 3, 8576+2048) # batch, window, length
+    model = TwinsSVT_1d_group_SE(num_classes=18, frames_size=3)
+    backbone = model
+
+    backbone.eval()
+    output = backbone(input)
+    # print(output.shape)
     from torchinfo import summary
-    summary(model, input_size=input.shape, depth=10)
+    summary(backbone, input_size=input.shape, depth=10,  col_names=[
+            "kernel_size", "input_size", "output_size", "num_params", ])
