@@ -26,6 +26,7 @@ python main.py --test_only --ckpt_path [LOCATION OF CHECKPOINT]
 ```
 
 ## Citation
+If you find our work useful for your research, please do not hesitate to cite our paper
 ```
 @INPROCEEDINGS{9978078,
   author={Chan, Cheuk-Yiu and Hui, Chun-Chuen and Siu, Wan-Chi and Chan, Sin-wai and Chan, H. Anthony},
