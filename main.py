@@ -20,7 +20,7 @@ from parseAction import ParseStr2List
 parser = argparse.ArgumentParser()
 
 # train spot matching route
-parser.add_argument('--SpotMatching', default=True, required=False, action='store_true', help='to switch to spotmatching training path')
+parser.add_argument('--SpotMatching', default=False, required=False, action='store_true', help='to switch to spotmatching training path')
 parser.add_argument('--backbone_path', default='MixSaT/Focal2fps/epoch=11-step=12324.ckpt', help='to describe the backbone weighting')
 
 # pytorch_lightning trainer args
@@ -160,7 +160,7 @@ parser.add_argument('--Post_norm', required=False, type=bool,
 
 def main(args):
     logger = WandbLogger(name=args.experiment_name,
-                         project=args.project, entity=args.entity)
+                         project=args.project)
 
     if args.model_name == 'TwinsSVT_1d':
         model = TwinsSVT_1d(num_classes=18, frames_size=args.framerate * args.window_size,
