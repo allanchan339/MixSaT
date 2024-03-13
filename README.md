@@ -6,7 +6,7 @@
 
 Run the following command on terminal
 ```
-conda create -n MixSaT  -c conda-forge pytorch-gpu=1.13 pytorch-lightning=1.7 torchmetrics==0.11.4 python=3.10 einops
+conda create -n MixSaT  -c conda-forge pytorch-gpu=1.13 pytorch-lightning=1.7 torchmetrics==0.11.4 python=3.10 einops scikit-learn
 conda activate MixSaT
 pip install wandb SoccerNet
 ```
