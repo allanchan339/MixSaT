@@ -20,7 +20,7 @@ from parseAction import ParseStr2List
 parser = argparse.ArgumentParser()
 
 # to fix 4090 NCCL P2P bug in driver
-import gpuoption
+from gpuoption import gpuoption
 if gpuoption():
     print('NCCL P2P is configured to disabled, new driver should fix this bug')
 
