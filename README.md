@@ -8,7 +8,7 @@ Run the following command on terminal
 ```
 conda create -n MixSaT  -c conda-forge pytorch-gpu=1.13 pytorch-lightning=1.7 torchmetrics==0.11.4 python=3.10 einops scikit-learn
 conda activate MixSaT
-pip install wandb SoccerNet
+pip install wandb SoccerNet rich
 ```
 
 The wandb account must be configured in advance to proper output log to wandb experiment logger. More details can be refered to [Wandb](https://docs.wandb.ai/quickstart)
