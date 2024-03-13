@@ -2,7 +2,7 @@ import numpy as np
 import torch.optim as optim
 
 class CosineWarmupScheduler(optim.lr_scheduler._LRScheduler):
-    def __init__(self, optimizer, warmup, max_iters):
+    def __init__(self, optimizer, warmup=50, max_iters=100):
         self.warmup_epoch = warmup
         self.max_num_iters = max_iters
         super().__init__(optimizer)

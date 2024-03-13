@@ -19,6 +19,11 @@ from parseAction import ParseStr2List
 
 parser = argparse.ArgumentParser()
 
+# to fix 4090 NCCL P2P bug in driver
+import gpuoption
+if gpuoption():
+    print('NCCL P2P is configured to disabled, new driver should fix this bug')
+
 # train spot matching route
 parser.add_argument('--SpotMatching', default=False, required=False, action='store_true', help='to switch to spotmatching training path')
 parser.add_argument('--backbone_path', default='MixSaT/Focal2fps/epoch=11-step=12324.ckpt', help='to describe the backbone weighting')
