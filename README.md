@@ -19,7 +19,7 @@ python main.py
 
 ## How to interference with pretrained checkpoint
 
-Download pretrained weight on [drive](), and run following command on terminal
+Download the pretrained model on [OneDrive](https://1drv.ms/u/s!AvJJYu8Th24UjNh5dZF04qSHtHuQFw?e=9zEPP2), and run following command on terminal
 ```
 python main.py --test_only --ckpt_path [LOCATION OF CHECKPOINT]
 ```
