@@ -310,18 +310,18 @@ class LitModel(pl.LightningModule):
             label_cls = (list(EVENT_DICTIONARY_V2.keys()))
             a_mAP_per_class = dict(
                 zip(label_cls, results['a_mAP_per_class']))
-            self.log(f'Test/{metric}/mAP_per_class',
-                     a_mAP_per_class, logger=True, prog_bar=False, rank_zero_only=True)
+            for key, value in a_mAP_per_class.items():
+                self.log(f'Test/{metric}/mAP_per_class/{key}', float(value), logger=True, prog_bar=False, rank_zero_only=True)
 
             a_mAP_per_class_visible = dict(
                 zip(label_cls, results['a_mAP_per_class_visible']))
-            self.log(f'Test/{metric}/mAP_per_class_visible)', a_mAP_per_class_visible,
-                     logger=True, prog_bar=False, rank_zero_only=True)
+            for key, value in a_mAP_per_class_visible.items():
+                self.log(f'Test/{metric}/mAP_per_class_visible/{key}', float(value), logger=True, prog_bar=False, rank_zero_only=True)
 
             a_mAP_per_class_unshown = dict(
                 zip(label_cls, results['a_mAP_per_class_unshown']))
-            self.log(f'Test/{metric}/a_mAP_per_class_unshown)', a_mAP_per_class_unshown,
-                     logger=True, prog_bar=False, rank_zero_only=True)
+            for key, value in a_mAP_per_class_unshown.items():
+                self.log(f'Test/{metric}/a_mAP_per_class_unshown/{key}', float(value), logger=True, prog_bar=False, rank_zero_only=True)
         
         # Clear the outputs for the next epoch
         self.test_step_outputs.clear()

@@ -70,14 +70,14 @@ class LitDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         test_loader = torch.utils.data.DataLoader(self.dataset_Test,
                                                   batch_size=1, shuffle=False,
-                                                  num_workers=1, pin_memory=True)
+                                                  num_workers=0, pin_memory=True)
         return test_loader
 
     def predict_dataloader(self):
         predict_loader = torch.utils.data.DataLoader(self.dataset_Predict,
                                                batch_size=1,
                                                shuffle=False,
-                                               num_workers=1, pin_memory=True)
+                                               num_workers=0, pin_memory=True)
         return predict_loader
 
     # def teardown(self, stage=None):

@@ -36,7 +36,7 @@ version = 2 # Dataset version
 fast_dev = true # Added: Required for data loading
 
 [optimizer]
-lr = 1.0e-2
+lr = 1.0e-3
 lrE = 1.0e-6 # Learning Rate End for SWA
 patience = 50 # Early stopping patience
 weight_decay = 0.0
