@@ -24,7 +24,7 @@ class LitDataModule(pl.LightningDataModule):
                 version=self.args.version,
                 framerate=self.args.framerate,
                 window_size=self.args.window_size, 
-                fast_dev=self.args.fast_dev,
+                fast_dev=self.args.fast_dev_run,
                 stride=self.args.window_stride)
             self.dataset_Valid = SoccerNetClipsNoCache_SlidingWindow(
                 path=self.args.SoccerNet_path,
@@ -33,7 +33,7 @@ class LitDataModule(pl.LightningDataModule):
                 version=self.args.version,
                 framerate=self.args.framerate,
                 window_size=self.args.window_size, 
-                fast_dev=self.args.fast_dev,
+                fast_dev=self.args.fast_dev_run,
                 stride=self.args.window_stride)
 
         elif stage == 'test':

@@ -1,29 +1,28 @@
 # Configuration file for MixSaT project
 
 [paths]
-SoccerNet_path = "/hdda/Datasets/SoccerNet"
+SoccerNet_path = "/hdda/Datasets/SoccerNet/video"
 
 [trainer]
-deterministic = true
+deterministic = false
 benchmark = true
 min_epochs = 1
 max_epochs = 100
 check_val_every_n_epoch = 1
-precision = 32
-# detect_anomaly = true # Boolean flags might be better as CLI or handled carefully in loading
+precision = 'bf16'
+detect_anomaly = false
 sync_batchnorm = true
 log_every_n_steps = 10
 limit_val_batches = 1.0
 limit_train_batches = 1.0 # Corrected dest from original parser
-reload_dataloaders_every_n_epochs = 100
 seed = 42
 accelerator = "gpu" # Added: Example "gpu" or "cpu"
 devices = "auto"      # Added: Example 1, "0,1", "auto", -1
-strategy = "auto"     # Added: Example "ddp", "dp", "auto"
+strategy = "ddp_find_unused_parameters_true"     # Added: Example "ddp", "dp", "auto"
 
 [data]
 batch_size = 134
-features = "baidu_ResNET_concat.npy"
+features = "baidu_soccer_embeddings.npy"
 split_train = ["train"]
 split_valid = ["valid"]
 split_test = ["test", "challenge"]
@@ -34,6 +33,7 @@ window_size = 3
 window_shift = 0
 window_stride = 3
 version = 2 # Dataset version
+fast_dev_run = true # Added: Required for data loading
 
 [optimizer]
 lr = 1.0e-4
@@ -50,7 +50,7 @@ feature_dim = "" # Changed from 'null' to an empty string for valid TOML.
                    # Python code should handle an empty string as a null-like/default value.
 NMS_window = 6
 NMS_threshold = 0.0
-num_classes = 17 # Added: Assuming 17 classes, adjust if different
+num_classes = 18
 
 [loss]
 criterion = "BinaryFocalLoss" # Options: "SigmoidFocalLoss", "BCELoss", "BinaryFocalLoss"
@@ -77,7 +77,7 @@ Post_norm = false # False to use PreNorm, True to use PostNorm
 logger_type = "wandb" # Options: "wandb", "tensorboard", "none"
 project = "MixSaT_Train" # Your WandB project name
 entity = "cihe-cis"    # Your WandB entity (username or team)
-experiment_name = "MixSaT-Comm" # A name for this specific run
+# experiment_name = "" # Leave commented out to let WandB generate random name
 
 # Added base_output_dir and final_results_dir, often needed by callbacks or logging
 [output_dirs]

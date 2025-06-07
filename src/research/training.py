@@ -23,6 +23,10 @@ class LitModel(pl.LightningModule):
         self.args = args
         # save hyper-parameters to loggers
         self.save_hyperparameters(ignore=['model'])
+        
+        # Storage for validation and test outputs (for PyTorch Lightning v2.0+ compatibility)
+        self.validation_step_outputs = []
+        self.test_step_outputs = []
 
         if self.args.criterion == 'NLLLoss':
             self.criterion = NLLLoss()
@@ -39,6 +43,7 @@ class LitModel(pl.LightningModule):
 
         elif self.args.criterion == 'BinaryFocalLoss':
             self.criterion = BinaryFocalLoss()
+    
     def forward(self, x):  # used to write pipeline from input to output
         y = self.model(x)
         return y
@@ -76,17 +81,27 @@ class LitModel(pl.LightningModule):
         self.log("Train/Loss", loss, on_step=True, on_epoch=True, logger=True)
         return loss
 
-    def validation_epoch_end(self, validation_step_outputs):
+    def on_validation_epoch_start(self):
+        # Clear any leftover validation outputs from previous epoch
+        self.validation_step_outputs.clear()
+
+    def on_test_epoch_start(self):
+        # Clear any leftover test outputs from previous epoch
+        self.test_step_outputs.clear()
+
+    def on_validation_epoch_end(self):
+        validation_step_outputs = self.validation_step_outputs
+        
         def _valid_epoch_end(validation_step_outputs):
 
             # AP refers to average_precision_score in torchmetrics
             # [2048,18] in batch_size = 1024, [3979, 18] in batch_size = 2048
             all_labels = list(
                 map(itemgetter('label'), validation_step_outputs))
-            all_labels = torch.cat(all_labels).cpu().detach().numpy()
+            all_labels = torch.cat(all_labels).cpu().detach().to(torch.float32).numpy()
             all_outputs = list(
                 map(itemgetter('output'), validation_step_outputs))
-            all_outputs = torch.cat(all_outputs).cpu().detach().numpy()
+            all_outputs = torch.cat(all_outputs).cpu().detach().to(torch.float32).numpy()
 
             AP = []
             for i in range(1, 17+1):
@@ -105,8 +120,10 @@ class LitModel(pl.LightningModule):
             label_cls = (list(EVENT_DICTIONARY_V2.keys()))
             zip_iterator = zip(label_cls, AP)
             AP_dictionary = dict(zip_iterator)
-            self.log('Valid/AP', AP_dictionary, logger=True, prog_bar=False,
-                     )
+            
+            # Log each AP value individually since PyTorch Lightning cannot log dictionaries
+            for key, value in AP_dictionary.items():
+                self.log(f'Valid/AP/{key}', value, logger=True, prog_bar=False)
 
         def _valid_epoch_end_ddp(validation_step_outputs):
 
@@ -125,9 +142,9 @@ class LitModel(pl.LightningModule):
                 all_outputs_tmp.append(
                     rearrange(all_outputs[i], "g b c -> (g b) c"))
 
-            all_labels = torch.cat(all_labels_tmp).cpu().detach().numpy()
+            all_labels = torch.cat(all_labels_tmp).cpu().detach().to(torch.float32).numpy()
             all_outputs = torch.cat(
-                all_outputs_tmp).cpu().detach().numpy()
+                all_outputs_tmp).cpu().detach().to(torch.float32).numpy()
 
             AP = []
             for i in range(1, 17+1):
@@ -146,24 +163,29 @@ class LitModel(pl.LightningModule):
             label_cls = (list(EVENT_DICTIONARY_V2.keys()))
             zip_iterator = zip(label_cls, AP)
             AP_dictionary = dict(zip_iterator)
-            self.log('Valid/AP', AP_dictionary, logger=True, prog_bar=False,
-                     )
+            
+            # Log each AP value individually since PyTorch Lightning cannot log dictionaries
+            for key, value in AP_dictionary.items():
+                self.log(f'Valid/AP/{key}', value, logger=True, prog_bar=False)
 
         if self.args.strategy in ['ddp', 'ddp_sharded']:
-
             validation_step_outputs = self.all_gather(validation_step_outputs)
-
             _valid_epoch_end_ddp(validation_step_outputs)
-
         else:
             _valid_epoch_end(validation_step_outputs)
+            
+        # Clear the outputs for the next epoch
+        self.validation_step_outputs.clear()
 
     def validation_step(self, batch, batch_idx):
         # use valid_metric
         feat, label = batch  # DP cuda 0 [512,18] #DDP cuda 0 [1024,18]
         output = self.model(feat)
-
-        return {"label": label, "output": output}
+        
+        # Store outputs for on_validation_epoch_end (PyTorch Lightning v2.0+ compatibility)
+        step_output = {"label": label, "output": output}
+        self.validation_step_outputs.append(step_output)
+        return step_output
 
     def _get_output_management_callback(self, trainer: pl.Trainer) -> 'OutputManagementCallback':
         """Helper to retrieve the OutputManagementCallback from the trainer."""
@@ -204,7 +226,7 @@ class LitModel(pl.LightningModule):
             end_frame = BS*(b+1) if BS * \
                 (b+1) < len(feat_half1) else len(feat_half1)  # 256,512, 768, ...
             feat = feat_half1[start_frame:end_frame]
-            output = self.model(feat).cpu().detach().numpy()
+            output = self.model(feat).cpu().detach().to(torch.float32).numpy()
             timestamp_long_half_1.append(output)
         timestamp_long_half_1 = np.concatenate(timestamp_long_half_1)
 
@@ -214,7 +236,7 @@ class LitModel(pl.LightningModule):
             end_frame = BS*(b+1) if BS * \
                 (b+1) < len(feat_half2) else len(feat_half2)
             feat = feat_half2[start_frame:end_frame]
-            output = self.model(feat).cpu().detach().numpy()
+            output = self.model(feat).cpu().detach().to(torch.float32).numpy()
             timestamp_long_half_2.append(output)
         timestamp_long_half_2 = np.concatenate(timestamp_long_half_2)
 
@@ -244,54 +266,67 @@ class LitModel(pl.LightningModule):
         flag = self._test_predict_share_step(
             game_ID, feat_half1, feat_half2, label_half1, label_half2, split, self.trainer) # Pass trainer
         
-        # try to let all process wait 
-        if self.args.strategy in ['ddp', 'ddp_sharded']:
-            self.trainer.strategy.barrier()
+        # Store outputs for on_test_epoch_end (PyTorch Lightning v2.0+ compatibility)
+        step_output = {"flag": flag, "split": split[0]}
+        self.test_step_outputs.append(step_output)
+        
         return flag
 
-    def test_epoch_end(self, test_step_outputs):
+    def on_test_epoch_end(self):
+        # Use the stored test outputs (PyTorch Lightning v2.0+ compatibility)
+        test_step_outputs = self.test_step_outputs
+        
         # Zipping is now handled by OutputManagementCallback.on_test_epoch_end
         
+        if not self.trainer.is_global_zero:
+            # Clear the outputs even if we exit early
+            self.test_step_outputs.clear()
+            return
+            
         output_mgmt_callback = self._get_output_management_callback(self.trainer)
         if not output_mgmt_callback:
             self.print("Error: OutputManagementCallback not found in test_epoch_end. Cannot proceed with evaluation.")
+            # Clear the outputs even if we exit early
+            self.test_step_outputs.clear()
             return
 
         # The path for evaluation should be the directory where JSONs (and the zip) are stored for the current split.
         # e.g., lightning_logs/VERSION/results/output_test
         predictions_path_for_evaluation = output_mgmt_callback.get_output_path_for_split(self, self.trainer)
 
-        if self.trainer.is_global_zero or self.args.strategy == 'dp':
-            # Evaluation logic remains here, but uses the path from the callback
-            for metric in ['loose', 'tight']:
-                results = evaluate(SoccerNet_path=self.args.SoccerNet_path,
-                                   Predictions_path=predictions_path_for_evaluation, # Use callback provided path
-                                   split=self.args._split, # Ensure _split is correctly set, e.g. 'test'
-                                   prediction_file="results_spotting.json",
-                                   version=self.args.version, metric=metric)
+        # Evaluation logic remains here, but uses the path from the callback
+        for metric in ['loose', 'tight']:
+            results = evaluate(SoccerNet_path=self.args.SoccerNet_path,
+                               Predictions_path=predictions_path_for_evaluation, # Use callback provided path
+                               split=self.args._split, # Ensure _split is correctly set, e.g. 'test'
+                               prediction_file="results_spotting.json",
+                               version=self.args.version, metric=metric)
 
-                self.log(f'Test/{metric}/average_mAP',
-                         results['a_mAP'], prog_bar=True, logger=True, rank_zero_only=True if self.args.strategy != 'dp' else False)
-                self.log(f'Test/{metric}/a_mAP_visible',
-                         results['a_mAP_visible'], prog_bar=True, logger=True, rank_zero_only=True if self.args.strategy != 'dp' else False)
-                self.log(f'Test/{metric}/a_mAP_unshown',
-                         results['a_mAP_unshown'], prog_bar=True, logger=True, rank_zero_only=True if self.args.strategy != 'dp' else False)
+            self.log(f'Test/{metric}/average_mAP',
+                     results['a_mAP'], prog_bar=True, logger=True, rank_zero_only=True)
+            self.log(f'Test/{metric}/a_mAP_visible',
+                     results['a_mAP_visible'], prog_bar=True, logger=True, rank_zero_only=True)
+            self.log(f'Test/{metric}/a_mAP_unshown',
+                     results['a_mAP_unshown'], prog_bar=True, logger=True, rank_zero_only=True)
 
-                label_cls = (list(EVENT_DICTIONARY_V2.keys()))
-                a_mAP_per_class = dict(
-                    zip(label_cls, results['a_mAP_per_class']))
-                self.log(f'Test/{metric}/mAP_per_class',
-                         a_mAP_per_class, logger=True, prog_bar=False, rank_zero_only=True if self.args.strategy != 'dp' else False)
+            label_cls = (list(EVENT_DICTIONARY_V2.keys()))
+            a_mAP_per_class = dict(
+                zip(label_cls, results['a_mAP_per_class']))
+            self.log(f'Test/{metric}/mAP_per_class',
+                     a_mAP_per_class, logger=True, prog_bar=False, rank_zero_only=True)
 
-                a_mAP_per_class_visible = dict(
-                    zip(label_cls, results['a_mAP_per_class_visible']))
-                self.log(f'Test/{metric}/mAP_per_class_visible)', a_mAP_per_class_visible,
-                         logger=True, prog_bar=False, rank_zero_only=True if self.args.strategy != 'dp' else False)
+            a_mAP_per_class_visible = dict(
+                zip(label_cls, results['a_mAP_per_class_visible']))
+            self.log(f'Test/{metric}/mAP_per_class_visible)', a_mAP_per_class_visible,
+                     logger=True, prog_bar=False, rank_zero_only=True)
 
-                a_mAP_per_class_unshown = dict(
-                    zip(label_cls, results['a_mAP_per_class_unshown']))
-                self.log(f'Test/{metric}/a_mAP_per_class_unshown)', a_mAP_per_class_unshown,
-                         logger=True, prog_bar=False, rank_zero_only=True if self.args.strategy != 'dp' else False)
+            a_mAP_per_class_unshown = dict(
+                zip(label_cls, results['a_mAP_per_class_unshown']))
+            self.log(f'Test/{metric}/a_mAP_per_class_unshown)', a_mAP_per_class_unshown,
+                     logger=True, prog_bar=False, rank_zero_only=True)
+        
+        # Clear the outputs for the next epoch
+        self.test_step_outputs.clear()
 
     def predict_step(self, batch, batch_idx):
         game_ID, feat_half1, feat_half2, label_half1, label_half2, split = batch
@@ -300,10 +335,6 @@ class LitModel(pl.LightningModule):
         # expect to create and write data to output_challege folder
         flag = self._test_predict_share_step(
             game_ID, feat_half1, feat_half2, label_half1, label_half2, split, self.trainer) # Pass trainer
-
-        #TODO: use barrier but no waiting too long ???? why wait? 
-        # if self.args.strategy in ['ddp', 'ddp_sharded']:
-        #     self.trainer.strategy.barrier()
 
         return flag
 

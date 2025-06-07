@@ -1,7 +1,11 @@
 MixSaT
 SoccerViTAC
 wandb/**
-__pycache__/**
+__pycache__
 .vscode/launch.json
 lightning_logs
 Output
+MixSaT_Train
+**/__pycache__/
+# The above pattern matches all __pycache__ directories recursively
+**/*.pyc

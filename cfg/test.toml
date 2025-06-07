@@ -1,18 +1,18 @@
 # Configuration file for MixSaT project - TEST specific
 
 [paths]
-SoccerNet_path = "/hdda/Datasets/SoccerNet"
+SoccerNet_path = "/hdda/Datasets/SoccerNet/video"
 # base_output_dir = "lightning_logs" # Handled by OutputManagementCallback default
 # final_results_dir = "retrain2025results" # Handled by OutputManagementCallback default
 ckpt_path = "MixSaT/2va8vsd7/checkpoints/epoch=9-step=5140.ckpt" # Path to the checkpoint for testing
 
 [trainer]
-deterministic = true
+deterministic = false
 benchmark = true
 # min_epochs = 1 # Not needed for test_only
 # max_epochs = 1 # Not needed for test_only
 # check_val_every_n_epoch = 1 # Not needed for test_only
-precision = 32
+precision = 'bf16'
 # detect_anomaly = true
 sync_batchnorm = true
 log_every_n_steps = 10
@@ -24,7 +24,7 @@ test_only = true # Crucial for test mode
 
 [data]
 batch_size = 134 # Can be adjusted for testing if needed
-features = "baidu_ResNET_concat.npy"
+features = "baidu_soccer_embeddings.npy"
 split_train = ["train"] # May not be strictly needed for test_only if dataloaders are conditional
 split_valid = ["valid"] # May not be strictly needed for test_only if dataloaders are conditional
 split_test = ["test", "challenge"] # Ensure this is the target split for testing/prediction
