@@ -49,21 +49,34 @@ class ModelResult2Video():
             return label
 
         self.labels = json.load(
-            open(os.path.join(self.path, self.listGames[self.index], self.labels)))  # Soccerpath + listgame + label_v2.json
+            open(os.path.join("/hdda/SoccerNet", self.listGames[self.index], "Labels-v2.json")))  # Soccerpath + listgame + label_v2.json
+        '''
         self.vlad = json.load(
             open(os.path.join(self.model_path, "NetVLAD++", "outputs_test", self.listGames[self.index], self.model_base_name)))
+        '''
+        '''
         self.vtn = json.load(
             open(os.path.join(self.model_path, "VTN", "outputs_test", self.listGames[self.index], self.model_base_name)))
-
+            '''
+        self.vtn = json.load(
+            open(os.path.join("/code/MixSaT/SoccerViTAC/cqcolw9v/output_test", self.listGames[self.index], "results_spotting.json")))
+        '''
+        self.model_results = json.load(
+            open(os.path.join("/code/MixSaT/SoccerViTAC/cqcolw9v/output_test", self.listGames[self.index], "results_spotting.json")))
+        '''
         self.labels = readGroundTruth(self.labels)
-        self.vlad = thresholdsFilter(self.vlad)
+        # self.vlad = thresholdsFilter(self.vlad)
         self.vtn = thresholdsFilter(self.vtn)
-
+        '''
         self.table = pd.merge(self.labels['label'], self.vlad['label'], left_index=True,
-                              right_index=True, how='outer', suffixes=["_gt", "_vlad"])
+                              right_index=True, how='outer', suffixes=["_gt", "_vlad"])'''
+        self.table = self.labels[['label']].rename(columns={'label': 'label_gt'})
         self.table = pd.merge(self.table, self.vtn['label'], left_index=True, right_index=True, how='outer').rename(
             columns={'label': 'label_vtn'})
-
+        
+        # self.table = self.labels[['label']].rename(columns={'label': 'label_gt'})
+        
+        
     def readVideo(self):
         def getDuration(vidcap, fps_video):
             frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -88,13 +101,15 @@ class ModelResult2Video():
     def parseJSON(self):
         def cleaningTable(df):
             tmp = pd.DataFrame(
-                columns=['second', 'label_gt', 'label_vlad', 'label_vtn'])
+                # columns=['second', 'label_gt', 'label_vlad', 'label_vtn'])
+                columns=['second', 'label_gt', 'label_vtn'])
             for index, row in df.iterrows():
                 if row.all() == set():
                     # skip if 3 rows are empty
                     continue
                 tmp2 = [index]
-                for i in [row['label_gt'], row['label_vlad'], row['label_vtn']]:
+                '''for i in [row['label_gt'], row['label_vlad'], row['label_vtn']]:'''
+                for i in [row['label_gt'], row['label_vtn']]:
                     if np.nan in i:  # del nan if exist
                         i.remove(np.nan)
 
@@ -106,7 +121,8 @@ class ModelResult2Video():
                     tmp2.append(i)
 
                 tmp1 = pd.DataFrame(
-                    columns=['second', 'label_gt', 'label_vlad', 'label_vtn'])
+                    # columns=['second', 'label_gt', 'label_vlad', 'label_vtn'])
+                    columns=['second', 'label_gt', 'label_vtn'])
                 tmp1.loc[0] = tmp2
                 tmp = pd.concat(
                     [tmp, tmp1], ignore_index=True)
@@ -119,11 +135,13 @@ class ModelResult2Video():
             final_df = pd.DataFrame()
             final_df['label_gt'] = self.table.groupby(pd.Grouper(
                 freq=f'{int(self.time_windows)}s',))['label_gt'].apply(set)
+            '''
             final_df['label_vlad'] = self.table.groupby(pd.Grouper(freq=f'{int(self.time_windows)}s',))[
                 'label_vlad'].apply(set)
+            '''
             final_df['label_vtn'] = self.table.groupby(pd.Grouper(freq=f'{int(self.time_windows)}s',))[
                 'label_vtn'].apply(set)
-
+            
             return final_df
         self.final_df = resample()
         self.final_df = cleaningTable(self.final_df)
@@ -155,7 +173,7 @@ class ModelResult2Video():
         def generator(txt):
             return TextClip(txt, font='Arial', fontsize=24, color='white')
 
-        subtitles = SubtitlesClip(self.subs, generator)
+        subtitles = SubtitlesClip(self.sub, generator)
         result = CompositeVideoClip(
             [self.vidcap, subtitles.set_pos(('center', 'bottom'))])
 
@@ -171,8 +189,8 @@ class ModelResult2Video():
 
     def prepare(self):
         self.readLabels()
-        # self.readVideo()
-        # self.parseJSON()
+        self.readVideo()
+        self.parseJSON()
 
     def run(self):
         self.createVideoWriter()  # only useful when cv2 writer is using
@@ -182,7 +200,7 @@ class ModelResult2Video():
             shift = -80 if self.HQ else -30
             font = cv2.FONT_HERSHEY_SIMPLEX
             thickness = 2 if self.HQ else 1
-
+            '''
             compare = False  # Compare our model with NetVLAD++
             if compare:
                 cv2.putText(frame,
@@ -198,7 +216,7 @@ class ModelResult2Video():
                 # if GT_Label & VTN also show null
                 if sub['label_gt'] == 'null' and sub['label_vtn'] == 'null':
                     return frame
-
+            '''
             cv2.putText(frame,
                         'GT Label: ' + sub['label_gt'],
                         (10, self.height-10),  # origin
@@ -256,7 +274,7 @@ class ModelResult2Video():
         tmp = tmp[~tmp.index.duplicated(keep='first')]
         tmp = tmp.index.to_list()
         table = self.table.loc[tmp]
-        del table['label_vlad']
+        # del table['label_vlad']
         table['correct'] = np.where(table['label_gt'] == table['label_vtn'], True, False)
         table['correct_rolling'] = table['correct'].rolling(3).mean()
         if 1.0 in table['correct_rolling'].values.tolist():
@@ -300,12 +318,16 @@ class ModelResult2Video():
         from sklearn.metrics import confusion_matrix, multilabel_confusion_matrix
         from SoccerNet.Evaluation.utils import EVENT_DICTIONARY_V2
         label_cls = ["Null"] + (list(EVENT_DICTIONARY_V2.keys()))
+        '''
         stat_vlad = multilabel_confusion_matrix(
             self.final_df['label_gt'], self.final_df['label_vlad'], labels=label_cls)
+        '''
         stat_vtn = multilabel_confusion_matrix(
             self.final_df['label_gt'], self.final_df['label_vtn'], labels=label_cls)
+        '''
         stat_result_vlad = confusionMatrix2DataFrame(
             label_cls, stat_vlad, 'NetVLAD++')
+        '''
         stat_result_vtn = confusionMatrix2DataFrame(label_cls, stat_vtn, 'VTN')
 
         output_path = os.path.join(self.output_path, getListGames(self.split)[
@@ -315,8 +337,8 @@ class ModelResult2Video():
         Path(output_path).mkdir(parents=True, exist_ok=True)
         self.final_df.to_csv(os.path.join(
             output_path, f'{self.half}_Subtitle_{self.time_windows}.csv'))
-        stat_result_vlad.to_csv(os.path.join(
-            output_path, f'{self.half}_Statistic_NetVLAD++_{self.time_windows}.csv'))
+        '''stat_result_vlad.to_csv(os.path.join(
+            output_path, f'{self.half}_Statistic_NetVLAD++_{self.time_windows}.csv'))'''
         stat_result_vtn.to_csv(os.path.join(
             output_path, f'{self.half}_Statistic_VTN_{self.time_windows}.csv'))
 
@@ -350,11 +372,11 @@ def main(args):
                                         args.Model_path, args.Output_path, half, thresholds=args.thresholds, HQ=args.HQ, time_windows=args.display_windows, index = i)
             embedder.prepare()
             # embedder.runMoviePY()
-            embedder.analysis()
+            # embedder.analysis()
 
         # embedder.parseJSON()
         # embedder.statistics()
-        # embedder.run()
+        embedder.run()
 
 
 if __name__ == '__main__':
@@ -362,11 +384,11 @@ if __name__ == '__main__':
                             formatter_class=ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--SoccerNet_path',   required=False, type=str,
-                        default="/home/user/Desktop/Code/SoccerNetv2-DevKit/Task1-ActionSpotting/data",     help='Path for SoccerNet')
+                        default="/hdda/SoccerNet", help='Path for SoccerNet')
     parser.add_argument('--Model_path', required=False, type=str,
-                        default="/home/user/Desktop/Code/SoccerNetv2-DevKit/Task1-ActionSpotting/TemporallyAwarePooling/src/models", help='indicate the path that store model result')
+                        default="/code/MixSaT/MixSaT/cqcolw9v/checkpoints/epoch=2-step=12318.ckpt", help='indicate the path that store model result')
     parser.add_argument('--Output_path', required=False, type=str,
-                        default='/home/user/Desktop/Code/SoccerNetv2-DevKit/Task1-ActionSpotting/TemporallyAwarePooling/src/models/demo', help='indicate the path that output processed video')
+                        default='/code/MixSaT/Output', help='indicate the path that output processed video')
     parser.add_argument('--thresholds', default=0.6, type=float,
                         help='threshold for prediction filter')
     parser.add_argument('--HQ', action='store_true',
