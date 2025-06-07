@@ -113,7 +113,6 @@ def setup_callbacks(args):
         ModelCheckpoint(monitor='Valid/mAP', mode='max'), 
         ModelSummary(max_depth=-1),
         LearningRateMonitor(),
-        RichProgressBar(),
         EarlyStopping(monitor='Valid/mAP', mode='max', patience=args.patience),
         StochasticWeightAveraging(swa_lrs=args.lrE),
         output_mgmt_callback

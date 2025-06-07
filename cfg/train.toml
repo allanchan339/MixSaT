@@ -7,7 +7,7 @@ SoccerNet_path = "/hdda/Datasets/SoccerNet/video"
 deterministic = false
 benchmark = true
 min_epochs = 1
-max_epochs = 100
+max_epochs = 1000
 check_val_every_n_epoch = 1
 precision = 'bf16'
 detect_anomaly = false
@@ -15,13 +15,13 @@ sync_batchnorm = true
 log_every_n_steps = 10
 limit_val_batches = 1.0
 limit_train_batches = 1.0 # Corrected dest from original parser
-seed = 42
+seed = 3407
 accelerator = "gpu" # Added: Example "gpu" or "cpu"
 devices = "auto"      # Added: Example 1, "0,1", "auto", -1
 strategy = "ddp_find_unused_parameters_true"     # Added: Example "ddp", "dp", "auto"
 
 [data]
-batch_size = 134
+batch_size = 768
 features = "baidu_soccer_embeddings.npy"
 split_train = ["train"]
 split_valid = ["valid"]
@@ -33,12 +33,12 @@ window_size = 3
 window_shift = 0
 window_stride = 3
 version = 2 # Dataset version
-fast_dev_run = true # Added: Required for data loading
+fast_dev = true # Added: Required for data loading
 
 [optimizer]
-lr = 1.0e-4
-lrE = 1.0e-8 # Learning Rate End for SWA
-patience = 5 # Early stopping patience
+lr = 1.0e-2
+lrE = 1.0e-6 # Learning Rate End for SWA
+patience = 50 # Early stopping patience
 weight_decay = 0.0
 # warmup: Calculated in main.py if not specified, e.g., (1000 // torch.cuda.device_count())
 # warmup = 250 

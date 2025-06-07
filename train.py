@@ -19,14 +19,14 @@ parser.add_argument('--cfg', type=str, default='cfg/train.toml',
 def train_logic(args):
     """Main training logic."""
     # Handle fast dev run configuration
-    if hasattr(args, 'fast_dev_run') and args.fast_dev_run:
+    if hasattr(args, 'fast_dev') and args.fast_dev:
         args.limit_train_batches = 1.0  # Ensure float
         args.limit_val_batches = 1.0    # Ensure float
         args.max_epochs = 10             # Ensure int
-        args.devices = 1  # Use single device for fast dev run
-        args.batch_size = int(134/3)  # Use small batch size for fast dev run
+        args.devices = [1]  # Use single device for fast dev run
+        args.batch_size = 256  # Use small batch size for fast dev run
         args.strategy = 'auto'  # strategy for fast dev run
-
+        args.max_num_worker = 0  # Use no workers for fast dev run
 
     # Setup configurations
     num_gpus = setup_gpu_config(args)
@@ -49,7 +49,7 @@ def train_logic(args):
         'check_val_every_n_epoch': args.check_val_every_n_epoch,
         'limit_train_batches': args.limit_train_batches,
         'limit_val_batches': args.limit_val_batches,
-        'fast_dev_run': hasattr(args, 'fast_dev_run') and args.fast_dev_run
+        # 'fast_dev': hasattr(args, 'fast_dev') and args.fast_dev
     })
 
     trainer = pl.Trainer(**trainer_params)
@@ -66,19 +66,19 @@ def train_logic(args):
     if ckpt_path_val and os.path.exists(ckpt_path_val) and ckpt_to_fit != ckpt_path_val:
         ckpt_for_eval = ckpt_path_val
 
-        trainer_params.update({
-            'devices': 1, 
-            'strategy': 'auto'  # Use DDP strategy for fast dev run
+    trainer_params.update({
+        'devices': 1, 
+        'strategy': 'auto'  # Use DDP strategy for fast dev run
 
-        })
+    })
 
     trainer = pl.Trainer(**trainer_params)  # Reinitialize trainer for evaluation
-    trainer.test(datamodule=dataModule, ckpt_path=ckpt_for_eval) 
-    trainer.predict(datamodule=dataModule, ckpt_path=ckpt_for_eval)
+    trainer.test(model=litModel, datamodule=dataModule, ckpt_path=ckpt_for_eval)
+    trainer.predict(model=litModel, datamodule=dataModule, ckpt_path=ckpt_for_eval)
 
 
 if __name__ == '__main__':
-    torch.set_float32_matmul_precision = 'medium'  # Set float32 matmul precision for better performance
+    torch.set_float32_matmul_precision('medium')  # Set float32 matmul precision for better performance
     cli_args = parser.parse_args()
     flat_config_dict = load_and_flatten_toml_config(cli_args.cfg)
     args_namespace = argparse.Namespace(**flat_config_dict)

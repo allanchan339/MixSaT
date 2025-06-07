@@ -108,8 +108,7 @@ class LitModel(pl.LightningModule):
                 AP.append(np.nan_to_num(average_precision_score(all_labels
                                                                 [:, i], all_outputs[:,  i])))
             mAP = np.mean(AP)  # sanity check 0.03242630150236116
-            tmp = EVENT_DICTIONARY_V2
-            tmp = tmp.copy()
+            tmp = EVENT_DICTIONARY_V2.copy()
             for k, v in tmp.items():
                 #dict["kick-off"] = AP[0]
                 tmp[k] = AP[v]
@@ -127,7 +126,6 @@ class LitModel(pl.LightningModule):
 
         def _valid_epoch_end_ddp(validation_step_outputs):
 
-            enable_Flag = True
             # AP refers to average_precision_score in torchmetrics
             all_labels = list(
                 map(itemgetter('label'), validation_step_outputs))
@@ -168,7 +166,7 @@ class LitModel(pl.LightningModule):
             for key, value in AP_dictionary.items():
                 self.log(f'Valid/AP/{key}', value, logger=True, prog_bar=False)
 
-        if self.args.strategy in ['ddp', 'ddp_sharded']:
+        if self.args.strategy in ['ddp', 'ddp_sharded', 'ddp_find_unused_parameters_true']:
             validation_step_outputs = self.all_gather(validation_step_outputs)
             _valid_epoch_end_ddp(validation_step_outputs)
         else:
@@ -185,7 +183,7 @@ class LitModel(pl.LightningModule):
         # Store outputs for on_validation_epoch_end (PyTorch Lightning v2.0+ compatibility)
         step_output = {"label": label, "output": output}
         self.validation_step_outputs.append(step_output)
-        return step_output
+        # return step_output
 
     def _get_output_management_callback(self, trainer: pl.Trainer) -> 'OutputManagementCallback':
         """Helper to retrieve the OutputManagementCallback from the trainer."""
