@@ -7,11 +7,7 @@ from dataLoading import LitDataModule, SpotMatchingDataModule
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint, LearningRateMonitor, ModelSummary, Timer, \
     RichProgressBar, StochasticWeightAveraging
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from model_twins_1d import TwinsSVT_1d  # 0
-from model_twins_1d_group import TwinsSVT_1d_group  # 1
-from model_twins_1d_SE import TwinsSVT_1d_SE  # 3
-from model_twins_1d_group_SE import TwinsSVT_1d_group_SE  # 13
-from pytorch_lightning.profiler import SimpleProfiler, AdvancedProfiler
+from model_twins_1d_group_SE import TwinsSVT_1d_group_SE
 from freegpu import find_gpus
 import os
 from pytorch_lightning.loggers import WandbLogger
@@ -90,8 +86,6 @@ parser.add_argument('--max_iters', required=False, type=int,
                     default=(1000 // torch.cuda.device_count()), help='number of iter//step for warmup')
 
 # model args
-parser.add_argument('--model_name', required=False, type=str,
-                    default="TwinsSVT_1d_group_SE", help='named of the model to save')
 parser.add_argument('--version', required=False, type=int,
                     default=2, help='Version of the dataset')
 parser.add_argument('--feature_dim', required=False, type=int,
@@ -131,8 +125,6 @@ parser.add_argument('--reload_dataloaders_every_n_epochs',
                     dest='reload_dataloaders_every_n_epochs', default=100, type=int)
 parser.add_argument('--fast_dev_run', default=False, type=bool,
                     help='control trainer to run train/valid/test 1 epoch only, development purpose')
-parser.add_argument('--profiler', default=None, type=str,
-                    help='profiler to find bottleneck, None/simple/advanced, performance impeded')
 parser.add_argument('--fast_dev', default=False, action='store_true',
                     help='This flag will set training dataset to head(5)')
 
@@ -167,68 +159,21 @@ def main(args):
     logger = WandbLogger(name=args.experiment_name,
                          project=args.project)
 
-    if args.model_name == 'TwinsSVT_1d':
-        model = TwinsSVT_1d(num_classes=18, frames_size=args.framerate * args.window_size,
-                            s1_next_dim=args.s1_next_dim,
-                            s1_patch_size=args.s1_patch_size,
-                            s1_local_patch_size=args.s1_local_patch_size,
-                            s1_global_k=args.s1_global_k,
-                            s1_depth=args.s1_depth,
-                            s2_next_dim=args.s2_next_dim,
-                            s2_patch_size=args.s2_patch_size,
-                            s2_local_patch_size=args.s2_local_patch_size,
-                            s2_global_k=args.s2_global_k,
-                            s2_depth=args.s2_depth,
-                            peg_kernel_size=args.peg_kernel_size,
-                            dropout=args.dropout,
-                            Post_norm=args.Post_norm
-                            )
-    elif args.model_name == 'TwinsSVT_1d_SE':  # 3
-        model = TwinsSVT_1d_SE(num_classes=18, frames_size=args.framerate * args.window_size,
-                               s1_next_dim=args.s1_next_dim,
-                               s1_patch_size=args.s1_patch_size,
-                               s1_local_patch_size=args.s1_local_patch_size,
-                               s1_global_k=args.s1_global_k,
-                               s1_depth=args.s1_depth,
-                               s2_next_dim=args.s2_next_dim,
-                               s2_patch_size=args.s2_patch_size,
-                               s2_local_patch_size=args.s2_local_patch_size,
-                               s2_global_k=args.s2_global_k,
-                               s2_depth=args.s2_depth,
-                               peg_kernel_size=args.peg_kernel_size,
-                               dropout=args.dropout,
-                               Post_norm=args.Post_norm)
-    elif args.model_name == 'TwinsSVT_1d_group':  # 1
-        model = TwinsSVT_1d_group(num_classes=18, frames_size=args.framerate * args.window_size,
-                                  s1_next_dim=args.s1_next_dim,
-                                  s1_patch_size=args.s1_patch_size,
-                                  s1_local_patch_size=args.s1_local_patch_size,
-                                  s1_global_k=args.s1_global_k,
-                                  s1_depth=args.s1_depth,
-                                  s2_next_dim=args.s2_next_dim,
-                                  s2_patch_size=args.s2_patch_size,
-                                  s2_local_patch_size=args.s2_local_patch_size,
-                                  s2_global_k=args.s2_global_k,
-                                  s2_depth=args.s2_depth,
-                                  peg_kernel_size=args.peg_kernel_size,
-                                  dropout=args.dropout,
-                                  Post_norm=args.Post_norm
-                                  )
-    elif args.model_name == 'TwinsSVT_1d_group_SE':  # 13
-        model = TwinsSVT_1d_group_SE(num_classes=18, frames_size=args.framerate * args.window_size,
-                                     s1_next_dim=args.s1_next_dim,
-                                     s1_patch_size=args.s1_patch_size,
-                                     s1_local_patch_size=args.s1_local_patch_size,
-                                     s1_global_k=args.s1_global_k,
-                                     s1_depth=args.s1_depth,
-                                     s2_next_dim=args.s2_next_dim,
-                                     s2_patch_size=args.s2_patch_size,
-                                     s2_local_patch_size=args.s2_local_patch_size,
-                                     s2_global_k=args.s2_global_k,
-                                     s2_depth=args.s2_depth,
-                                     peg_kernel_size=args.peg_kernel_size,
-                                     dropout=args.dropout,
-                                     Post_norm=args.Post_norm)
+    # Create TwinsSVT_1d_group_SE model
+    model = TwinsSVT_1d_group_SE(num_classes=18, frames_size=args.framerate * args.window_size,
+                                 s1_next_dim=args.s1_next_dim,
+                                 s1_patch_size=args.s1_patch_size,
+                                 s1_local_patch_size=args.s1_local_patch_size,
+                                 s1_global_k=args.s1_global_k,
+                                 s1_depth=args.s1_depth,
+                                 s2_next_dim=args.s2_next_dim,
+                                 s2_patch_size=args.s2_patch_size,
+                                 s2_local_patch_size=args.s2_local_patch_size,
+                                 s2_global_k=args.s2_global_k,
+                                 s2_depth=args.s2_depth,
+                                 peg_kernel_size=args.peg_kernel_size,
+                                 dropout=args.dropout,
+                                 Post_norm=args.Post_norm)
     
     if args.SpotMatching:
         litModel = LitModel.load_from_checkpoint(model = model, checkpoint_path=args.backbone_path)
@@ -255,14 +200,35 @@ def main(args):
     ]
 
     if not args.test_only:
-        trainer = pl.Trainer.from_argparse_args(
-            args,
+        trainer = pl.Trainer(
+            deterministic=args.deterministic,
+            min_epochs=args.min_epochs,
+            max_epochs=args.max_epochs,
+            check_val_every_n_epoch=args.check_val_every_n_epoch,
+            devices=args.devices,
+            accelerator=args.accelerator,
+            strategy=args.strategy,
+            precision=args.precision,
+            detect_anomaly=args.detect_anomaly,
+            sync_batchnorm=args.sync_batchnorm,
+            log_every_n_steps=args.log_every_n_steps,
+            limit_train_batches=args.limit_train_batches,
+            limit_val_batches=args.limit_val_batches,
+            reload_dataloaders_every_n_epochs=args.reload_dataloaders_every_n_epochs,
+            fast_dev_run=args.fast_dev_run,
             callbacks=callbacks,
             logger=logger if args.logger == 'wandb' else True,
         )
     else:
-        trainer = pl.Trainer.from_argparse_args(
-            args,
+        trainer = pl.Trainer(
+            deterministic=args.deterministic,
+            devices=args.devices,
+            accelerator=args.accelerator,
+            strategy=args.strategy,
+            precision=args.precision,
+            detect_anomaly=args.detect_anomaly,
+            sync_batchnorm=args.sync_batchnorm,
+            log_every_n_steps=args.log_every_n_steps,
             callbacks=callbacks,
             logger=logger,
             limit_train_batches=0,
