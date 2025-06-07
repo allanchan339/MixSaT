@@ -1,0 +1,15 @@
+[project]
+name = "mixsat"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.9,<=3.12" # Added upper bound for python
+dependencies = [
+    "pytorch-lightning<2.5", # Specify version compatible with torch<=2.4
+    "torch>=2.1,<=2.4",    # Constrain torch version
+    "numpy",
+    "SoccerNet==0.1.62",
+    "scikit-learn",
+    "einops",
+    "huggingface-hub==0.20.3"
+]
