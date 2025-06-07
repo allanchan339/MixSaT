@@ -1,5 +1,5 @@
 # To Start Automatic Commentary of Soccer Game with Mixed Spatial and Temporal Attention
-
+<img width="669" alt="image" src="https://github.com/user-attachments/assets/b86cd515-f9a0-4889-810a-16ef4ded21d8">
 <img width="669" alt="image" src="https://user-images.githubusercontent.com/38370649/229306020-20fd11a0-dc46-4ae7-9ad7-5c453853e87c.png">
 
 ## How to create environment required 
@@ -19,7 +19,7 @@ python main.py
 
 ## How to interference with pretrained checkpoint
 
-Download pretrained weight on [drive](), and run following command on terminal
+Download the pretrained model on [OneDrive](https://1drv.ms/u/s!AvJJYu8Th24UjNh5dZF04qSHtHuQFw?e=9zEPP2), and run following command on terminal
 ```
 python main.py --test_only --ckpt_path [LOCATION OF CHECKPOINT]
 ```
