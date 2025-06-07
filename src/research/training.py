@@ -1,6 +1,6 @@
 import pytorch_lightning as pl
 from torch import nn
-from loss import NLLLoss, SigmoidFocalLoss, BinaryFocalLoss
+from .loss import NLLLoss, SigmoidFocalLoss, BinaryFocalLoss
 import numpy as np
 import torch
 from SoccerNet.Evaluation.utils import AverageMeter, EVENT_DICTIONARY_V2, INVERSE_EVENT_DICTIONARY_V2
@@ -8,10 +8,12 @@ from sklearn.metrics import average_precision_score
 from SoccerNet.Evaluation.ActionSpotting import evaluate
 from operator import itemgetter
 import os
-import json
-from scheduler import CosineWarmupScheduler
 from einops import rearrange
 from einops.layers.torch import Rearrange
+
+from ..utils.utils import format_results_to_json
+from .scheduler import CosineWarmupScheduler  # Added missing import
+from .callbacks import OutputManagementCallback  # Added missing import
 
 
 class LitModel(pl.LightningModule):
@@ -163,75 +165,30 @@ class LitModel(pl.LightningModule):
 
         return {"label": label, "output": output}
 
-    def _test_predict_share_step(self, game_ID, feat_half1, feat_half2, label_half1, label_half2, split):
+    def _get_output_management_callback(self, trainer: pl.Trainer) -> 'OutputManagementCallback':
+        """Helper to retrieve the OutputManagementCallback from the trainer."""
+        for callback in trainer.callbacks:
+            if isinstance(callback, OutputManagementCallback): # Make sure to import OutputManagementCallback if not done globally
+                return callback
+        # self.print("Warning: OutputManagementCallback not found in trainer.callbacks.")
+        return None
+
+    def _test_predict_share_step(self, game_ID, feat_half1, feat_half2, label_half1, label_half2, split, trainer: pl.Trainer):
         # must be here as we need to load the _split
-        if self.args.logger == 'wandb':
-            self.args.output_results_path = os.path.join(
-                f'lightning_logs/version_None/results', f'output_{self.args._split}')
-        else:
-            self.args.output_results_path = os.path.join(
-                f'lightning_logs/version_{self.trainer.logger.version}/results', f'output_{self.args._split}')
+        
+        output_mgmt_callback = self._get_output_management_callback(trainer)
+        if not output_mgmt_callback:
+            self.print("Error: OutputManagementCallback not found. Cannot determine output path.")
+            # Potentially raise an error or handle this case gracefully
+            return -1 # Indicate failure
 
-
-        def result_to_json(timestamp_long_half_1, timestamp_long_half_2, output_results_path):
-
-            def get_spot_from_NMS(Input, window=60, thresh=0.0):
-                detections_tmp = np.copy(Input)
-                indexes = []
-                MaxValues = []
-                while(np.max(detections_tmp) >= thresh):
-
-                    # Get the max remaining index and value
-                    max_value = np.max(detections_tmp)
-                    max_index = np.argmax(detections_tmp)
-                    MaxValues.append(max_value)
-                    indexes.append(max_index)
-                    # detections_NMS[max_index,i] = max_value
-
-                    nms_from = int(np.maximum(-(window/2)+max_index, 0))
-                    nms_to = int(np.minimum(
-                        max_index+int(window/2), len(detections_tmp)))
-                    detections_tmp[nms_from:nms_to] = -1
-                return np.transpose([indexes, MaxValues])
-
-            framerate = self.args.framerate
-            get_spot = get_spot_from_NMS
-
-            json_data = dict()
-            json_data["UrlLocal"] = game_ID
-            json_data["predictions"] = list()
-
-            for half, timestamp in enumerate([timestamp_long_half_1, timestamp_long_half_2]):
-                for l in range(17):
-                    spots = get_spot(
-                        timestamp[:, l], window=self.args.NMS_window*framerate, thresh=self.args.NMS_threshold)
-                    for spot in spots:
-                        # print("spot", int(spot[0]), spot[1], spot)
-                        frame_index = int(spot[0])
-                        confidence = spot[1]
-                        # confidence = predictions_half_1[frame_index, l]
-
-                        seconds = int((frame_index//framerate) % 60)
-                        minutes = int((frame_index//framerate)//60)
-
-                        prediction_data = dict()
-                        prediction_data["gameTime"] = str(
-                            half+1) + " - " + str(minutes) + ":" + str(seconds)
-
-                        prediction_data["label"] = INVERSE_EVENT_DICTIONARY_V2[l]
-
-                        prediction_data["position"] = str(
-                            int((frame_index/framerate)*1000))
-                        prediction_data["half"] = str(half+1)
-                        prediction_data["confidence"] = str(confidence)
-                        json_data["predictions"].append(prediction_data)
-
-            # lightning_logs/version_25/results/output_test/2021-10-5 18:00 A vs B
-            os.makedirs(os.path.join(
-                output_results_path, game_ID), exist_ok=True)
-            with open(os.path.join(output_results_path, game_ID, 'results_spotting.json'), 'w') as output_file:
-                json.dump(json_data, output_file, indent=4)
-            return 0
+        # The specific path for this game's JSON, e.g., lightning_logs/VERSION/results/output_test
+        # This path is where the individual game JSONs (inside their game_ID folder) will be saved.
+        current_output_path_for_split = output_mgmt_callback.get_output_path_for_split(self, trainer)
+        
+        # The old self.args.output_results_path is now managed by the callback.
+        # We pass current_output_path_for_split to format_results_to_json,
+        # which will then create game_ID subdirectories within it.
 
         # Batch size of 1
         game_ID = game_ID[0]
@@ -266,9 +223,18 @@ class LitModel(pl.LightningModule):
         # cut the null class
         timestamp_long_half_2 = timestamp_long_half_2[:, 1:]
 
-        # lightning_logs/version_25/results/output_test/
-        flag = result_to_json(timestamp_long_half_1,
-                       timestamp_long_half_2, self.args.output_results_path)
+        # Call the utility function to format and save JSON
+        # Pass all necessary arguments, including the path from the callback
+        flag = format_results_to_json(
+            game_ID=game_ID,
+            timestamp_long_half_1=timestamp_long_half_1,
+            timestamp_long_half_2=timestamp_long_half_2,
+            output_results_path=current_output_path_for_split, # This is the key change
+            framerate=self.args.framerate,
+            NMS_window=self.args.NMS_window,
+            NMS_threshold=self.args.NMS_threshold,
+            INVERSE_EVENT_DICTIONARY_V2=INVERSE_EVENT_DICTIONARY_V2
+        )
         return flag
 
     def test_step(self, batch, batch_idx):
@@ -276,7 +242,7 @@ class LitModel(pl.LightningModule):
         self.args._split = split[0]  # test
 
         flag = self._test_predict_share_step(
-            game_ID, feat_half1, feat_half2, label_half1, label_half2, split)
+            game_ID, feat_half1, feat_half2, label_half1, label_half2, split, self.trainer) # Pass trainer
         
         # try to let all process wait 
         if self.args.strategy in ['ddp', 'ddp_sharded']:
@@ -284,25 +250,23 @@ class LitModel(pl.LightningModule):
         return flag
 
     def test_epoch_end(self, test_step_outputs):
-        def zipResults(zip_path, target_dir, filename="results_spotting.json"):
-            import zipfile
-            zipobj = zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED)
-            rootlen = len(target_dir) + 1
-            for base, dirs, files in os.walk(target_dir):
-                for file in files:
-                    if file == filename:
-                        fn = os.path.join(base, file)
-                        zipobj.write(fn, fn[rootlen:])
+        # Zipping is now handled by OutputManagementCallback.on_test_epoch_end
+        
+        output_mgmt_callback = self._get_output_management_callback(self.trainer)
+        if not output_mgmt_callback:
+            self.print("Error: OutputManagementCallback not found in test_epoch_end. Cannot proceed with evaluation.")
+            return
+
+        # The path for evaluation should be the directory where JSONs (and the zip) are stored for the current split.
+        # e.g., lightning_logs/VERSION/results/output_test
+        predictions_path_for_evaluation = output_mgmt_callback.get_output_path_for_split(self, self.trainer)
 
         if self.trainer.is_global_zero or self.args.strategy == 'dp':
-            zipResults(zip_path=os.path.join(self.args.output_results_path, f'result_spotting_{self.args._split}.zip'),
-                       target_dir=self.args.output_results_path,
-                       filename="results_spotting.json")
-
+            # Evaluation logic remains here, but uses the path from the callback
             for metric in ['loose', 'tight']:
                 results = evaluate(SoccerNet_path=self.args.SoccerNet_path,
-                                   Predictions_path=self.args.output_results_path,
-                                   split="test",
+                                   Predictions_path=predictions_path_for_evaluation, # Use callback provided path
+                                   split=self.args._split, # Ensure _split is correctly set, e.g. 'test'
                                    prediction_file="results_spotting.json",
                                    version=self.args.version, metric=metric)
 
@@ -331,11 +295,11 @@ class LitModel(pl.LightningModule):
 
     def predict_step(self, batch, batch_idx):
         game_ID, feat_half1, feat_half2, label_half1, label_half2, split = batch
-        self.args._split = split[0]  # test
+        self.args._split = split[0]
 
         # expect to create and write data to output_challege folder
         flag = self._test_predict_share_step(
-            game_ID, feat_half1, feat_half2, label_half1, label_half2, split)
+            game_ID, feat_half1, feat_half2, label_half1, label_half2, split, self.trainer) # Pass trainer
 
         #TODO: use barrier but no waiting too long ???? why wait? 
         # if self.args.strategy in ['ddp', 'ddp_sharded']:
@@ -344,29 +308,7 @@ class LitModel(pl.LightningModule):
         return flag
 
     def on_predict_epoch_end(self, predict_step_outputs):
-        def zipResults(zip_path, target_dir, filename="results_spotting.json"):
-            import zipfile
-            zipobj = zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED)
-            rootlen = len(target_dir) + 1
-            for base, dirs, files in os.walk(target_dir):
-                for file in files:
-                    if file == filename:
-                        fn = os.path.join(base, file)
-                        zipobj.write(fn, fn[rootlen:])
-        if self.trainer.is_global_zero or self.args.strategy == 'dp':
-            # should zip as result_spotting_challege.zip
-            zipResults(zip_path=os.path.join(self.args.output_results_path, f'result_spotting_{self.args._split}.zip'),
-                       target_dir=self.args.output_results_path,
-                       filename="results_spotting.json")
-
-    def on_predict_end(self):
-
-        if self.args.logger == 'wandb':
-            if self.trainer.is_global_zero or self.args.strategy == 'dp':
-                # rename version_None to {version}
-                os.rename(f'lightning_logs/version_None/results',
-                        f'lightning_logs/{self.trainer.logger.version}')
-                import shutil
-                # move data recursively to checkpoint folder
-                shutil.move(f'lightning_logs/{self.trainer.logger.version}',
-                        f'SoccerViTAC/{self.trainer.logger.version}')
+        # Zipping is now handled by OutputManagementCallback.on_predict_epoch_end
+        # The original zipResults call is removed from here.
+        # If there was any other logic here, it would remain.
+        pass # Placeholder if no other logic was present

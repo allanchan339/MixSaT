@@ -1,0 +1,101 @@
+# Configuration file for MixSaT project - TEST specific
+
+[paths]
+SoccerNet_path = "/hdda/Datasets/SoccerNet"
+# base_output_dir = "lightning_logs" # Handled by OutputManagementCallback default
+# final_results_dir = "retrain2025results" # Handled by OutputManagementCallback default
+ckpt_path = "MixSaT/2va8vsd7/checkpoints/epoch=9-step=5140.ckpt" # Path to the checkpoint for testing
+
+[trainer]
+deterministic = true
+benchmark = true
+# min_epochs = 1 # Not needed for test_only
+# max_epochs = 1 # Not needed for test_only
+# check_val_every_n_epoch = 1 # Not needed for test_only
+precision = 32
+# detect_anomaly = true
+sync_batchnorm = true
+log_every_n_steps = 10
+# limit_val_batches = 1.0 # Not needed for test_only, or set to 1.0 if predict uses val_loader
+# limit_train_batches = 1.0 # Not needed for test_only
+# reload_dataloaders_every_n_epochs = 100 # Not needed for test_only
+seed = 42
+test_only = true # Crucial for test mode
+
+[data]
+batch_size = 134 # Can be adjusted for testing if needed
+features = "baidu_ResNET_concat.npy"
+split_train = ["train"] # May not be strictly needed for test_only if dataloaders are conditional
+split_valid = ["valid"] # May not be strictly needed for test_only if dataloaders are conditional
+split_test = ["test", "challenge"] # Ensure this is the target split for testing/prediction
+# max_num_worker: Calculated in main.py if not specified
+# max_num_worker = 4 
+framerate = 2
+window_size = 3
+window_shift = 0
+window_stride = 3
+version = 2 # Dataset version
+
+# Optimizer section might not be strictly necessary for test_only, 
+# but keeping structure for consistency or if any part of it is read by the model/system
+[optimizer]
+lr = 1.0e-4 
+lrE = 1.0e-8 
+patience = 5 
+weight_decay = 0.0
+# warmup: Calculated in main.py if not specified
+# warmup = 250 
+# max_iters: Calculated in main.py if not specified
+# max_iters = 250 
+
+[model]
+feature_dim = '' 
+NMS_window = 6
+NMS_threshold = 0.0
+num_classes = 17 # Assuming this is fixed, should be in train.toml too
+
+[loss]
+criterion = "BinaryFocalLoss"
+weight = ""
+
+[model_twins_svt]
+s1_next_dim = 60
+s1_patch_size = 8
+s1_local_patch_size = 16
+s1_global_k = 20
+s1_depth = 1
+s2_next_dim = 720
+s2_patch_size = 4
+s2_local_patch_size = 4
+s2_global_k = 20
+s2_depth = 2
+peg_kernel_size = 9
+dropout = 0.0
+Post_norm = false
+
+# Logger section - configure as needed for test runs
+[logger]
+logger_type = "wandb" # or "tensorboard" or "none"
+project = "MixSaT_Test" # Your WandB project name for test runs
+entity = "cihe-cis"    # Your WandB entity (username or team)
+experiment_name = "MixSaT-Comm-Test" # A name for this specific test run
+
+# It's good practice to ensure all keys expected by main_logic are present,
+# even if some are not actively used in test_only mode, to prevent hasattr/KeyError issues.
+# Add any other necessary parameters that LitModel or LitDataModule might expect during instantiation,
+# even if they are not used for the actual test pass.
+# For example, if LitModel's __init__ expects args.some_training_param, it should be here.
+
+[experiment_params] # Example, if you had such a section
+accelerator = "gpu" # "gpu" or "cpu"
+devices = "auto" # e.g., 1, "0,1", "auto", -1
+strategy = "auto" # e.g., "ddp", "dp", "auto"
+
+# Ensure all parameters required by the classes in main.py are present.
+# For example, if `OutputManagementCallback` or other callbacks need specific args,
+# they should be here.
+base_output_dir = "lightning_logs_test" # Separate output for test runs
+final_results_dir = "SoccerViTAC_test" # Separate results for test runs
+
+# fast_dev_run can be useful for quick test script debugging
+# fast_dev_run = true

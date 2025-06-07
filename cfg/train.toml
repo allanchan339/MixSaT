@@ -1,0 +1,85 @@
+# Configuration file for MixSaT project
+
+[paths]
+SoccerNet_path = "/hdda/Datasets/SoccerNet"
+
+[trainer]
+deterministic = true
+benchmark = true
+min_epochs = 1
+max_epochs = 100
+check_val_every_n_epoch = 1
+precision = 32
+# detect_anomaly = true # Boolean flags might be better as CLI or handled carefully in loading
+sync_batchnorm = true
+log_every_n_steps = 10
+limit_val_batches = 1.0
+limit_train_batches = 1.0 # Corrected dest from original parser
+reload_dataloaders_every_n_epochs = 100
+seed = 42
+accelerator = "gpu" # Added: Example "gpu" or "cpu"
+devices = "auto"      # Added: Example 1, "0,1", "auto", -1
+strategy = "auto"     # Added: Example "ddp", "dp", "auto"
+
+[data]
+batch_size = 134
+features = "baidu_ResNET_concat.npy"
+split_train = ["train"]
+split_valid = ["valid"]
+split_test = ["test", "challenge"]
+# max_num_worker: Calculated in main.py if not specified, e.g., os.cpu_count() // torch.cuda.device_count()
+# max_num_worker = 4 
+framerate = 2
+window_size = 3
+window_shift = 0
+window_stride = 3
+version = 2 # Dataset version
+
+[optimizer]
+lr = 1.0e-4
+lrE = 1.0e-8 # Learning Rate End for SWA
+patience = 5 # Early stopping patience
+weight_decay = 0.0
+# warmup: Calculated in main.py if not specified, e.g., (1000 // torch.cuda.device_count())
+# warmup = 250 
+# max_iters: Calculated in main.py if not specified, e.g., (1000 // torch.cuda.device_count())
+# max_iters = 250 
+
+[model]
+feature_dim = "" # Changed from 'null' to an empty string for valid TOML.
+                   # Python code should handle an empty string as a null-like/default value.
+NMS_window = 6
+NMS_threshold = 0.0
+num_classes = 17 # Added: Assuming 17 classes, adjust if different
+
+[loss]
+criterion = "BinaryFocalLoss" # Options: "SigmoidFocalLoss", "BCELoss", "BinaryFocalLoss"
+weight = "" # Changed from 0.0 to an empty string for valid TOML representation of an optional/unset value.
+             # Python code should handle an empty string as a null-like/default value.
+
+[model_twins_svt]
+s1_next_dim = 60
+s1_patch_size = 8
+s1_local_patch_size = 16
+s1_global_k = 20
+s1_depth = 1
+s2_next_dim = 720
+s2_patch_size = 4
+s2_local_patch_size = 4
+s2_global_k = 20
+s2_depth = 2
+peg_kernel_size = 9
+dropout = 0.0
+Post_norm = false # False to use PreNorm, True to use PostNorm
+
+# Added Logger section for WandB (and other) configurations
+[logger]
+logger_type = "wandb" # Options: "wandb", "tensorboard", "none"
+project = "MixSaT_Train" # Your WandB project name
+entity = "cihe-cis"    # Your WandB entity (username or team)
+experiment_name = "MixSaT-Comm" # A name for this specific run
+
+# Added base_output_dir and final_results_dir, often needed by callbacks or logging
+[output_dirs]
+base_output_dir = "lightning_logs"
+final_results_dir = "SoccerViTAC"
