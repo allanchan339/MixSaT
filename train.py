@@ -22,7 +22,7 @@ def train_logic(args):
     if hasattr(args, 'fast_dev') and args.fast_dev:
         args.limit_train_batches = 1.0  # Ensure float
         args.limit_val_batches = 1.0    # Ensure float
-        args.max_epochs = 10             # Ensure int
+        args.max_epochs = 5             # Ensure int
         args.devices = [1]  # Use single device for fast dev run
         args.batch_size = 256  # Use small batch size for fast dev run
         args.strategy = 'auto'  # strategy for fast dev run

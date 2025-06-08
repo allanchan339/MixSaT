@@ -105,8 +105,7 @@ def setup_callbacks(args):
     """Setup and return list of callbacks."""
     output_mgmt_callback = OutputManagementCallback(
         logger_type=args.logger_type if hasattr(args, 'logger_type') else 'none',
-        base_output_dir=args.base_output_dir,
-        final_results_dir=args.final_results_dir
+        output_dir=args.output_dir
     )
     
     callbacks_list = [

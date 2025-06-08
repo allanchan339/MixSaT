@@ -25,10 +25,10 @@ batch_size = 768
 features = "baidu_soccer_embeddings.npy"
 split_train = ["train"]
 split_valid = ["valid"]
-split_test = ["test", "challenge"]
+split_test = ['test']  #["test", "challenge"]
 # max_num_worker: Calculated in main.py if not specified, e.g., os.cpu_count() // torch.cuda.device_count()
 # max_num_worker = 4 
-framerate = 2
+framerate = 1
 window_size = 3
 window_shift = 0
 window_stride = 3
@@ -79,7 +79,6 @@ project = "MixSaT_Train" # Your WandB project name
 entity = "cihe-cis"    # Your WandB entity (username or team)
 # experiment_name = "" # Leave commented out to let WandB generate random name
 
-# Added base_output_dir and final_results_dir, often needed by callbacks or logging
+# Output directory configuration
 [output_dirs]
-base_output_dir = "lightning_logs"
-final_results_dir = "SoccerViTAC"
+output_dir = "MixSaT_Train"  # Project-named directory for all training outputs

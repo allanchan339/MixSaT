@@ -1,18 +1,15 @@
 import os
-import shutil
 import pytorch_lightning as pl
 from ..utils.utils import zipResults # Assuming utils.py is in the same directory
 
 class OutputManagementCallback(pl.Callback):
-    def __init__(self, base_output_dir="lightning_logs", final_results_dir="SoccerViTAC", logger_type="wandb"):
+    def __init__(self, output_dir="lightning_logs", logger_type="wandb"):
         super().__init__()
-        self.base_output_dir = base_output_dir
-        self.final_results_dir = final_results_dir
+        self.output_dir = output_dir
         self.logger_type = logger_type
 
-        self.run_base_dir = None
+        self.run_output_dir = None
         self.run_results_dir = None
-        self.run_final_dir = None
         self.version = None
 
     def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str):
@@ -23,26 +20,20 @@ class OutputManagementCallback(pl.Callback):
             self.version = "unknown_version" # Fallback
             pl_module.print(f"Warning: Could not determine logger version. Using '{self.version}'.")
 
-        # Path for intermediate results, e.g., lightning_logs/VERSION
-        self.run_base_dir = os.path.join(self.base_output_dir, self.version)
-        # Path for results files within the intermediate dir, e.g., lightning_logs/VERSION/results
-        self.run_results_dir = os.path.join(self.run_base_dir, "results")
-        
-        # Final destination for the entire versioned folder, e.g., SoccerViTAC/VERSION
-        self.run_final_dir = os.path.join(self.final_results_dir, self.version)
+        # Path for output results, e.g., MixSaT_Train/VERSION
+        self.run_output_dir = os.path.join(self.output_dir, self.version)
+        # Path for results files within the output dir, e.g., MixSaT_Train/VERSION/results
+        self.run_results_dir = os.path.join(self.run_output_dir, "results")
 
         if trainer.is_global_zero:
             os.makedirs(self.run_results_dir, exist_ok=True)
-            # Ensure the parent of the final destination exists for the move later
-            # e.g., SoccerViTAC directory
-            os.makedirs(os.path.dirname(self.run_final_dir), exist_ok=True)
 
     def get_output_path_for_split(self, pl_module: pl.LightningModule, trainer: pl.Trainer):
         """
         Gets the output path for the current split (e.g., test, challenge) 
         and creates it if it doesn't exist.
         This path is where individual game JSONs will be saved.
-        Example: lightning_logs/VERSION/results/output_test
+        Example: training_results/VERSION/results/output_test
         """
         current_split = getattr(pl_module.args, '_split', 'default_split')
         if current_split == 'default_split':
@@ -90,26 +81,6 @@ class OutputManagementCallback(pl.Callback):
             # are expected to remain in LitModel.test_epoch_end, using output_dir_for_split.
 
     def on_predict_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
-        """Moves the prediction output directory to the final location after all prediction."""
-        if self.logger_type == 'wandb' and trainer.is_global_zero:
-            if self.run_base_dir and os.path.exists(self.run_base_dir):
-                # Ensure parent of the final destination exists (e.g., SoccerViTAC)
-                # This should have been created in setup, but double-check.
-                final_destination_parent = os.path.dirname(self.run_final_dir)
-                os.makedirs(final_destination_parent, exist_ok=True)
-                
-                if os.path.exists(self.run_final_dir):
-                    pl_module.print(f"OutputManagementCallback: Warning: Final destination {self.run_final_dir} already exists. Removing it before move.")
-                    shutil.rmtree(self.run_final_dir)
-                
-                pl_module.print(f"OutputManagementCallback: Moving {self.run_base_dir} to {self.run_final_dir}")
-                try:
-                    shutil.move(self.run_base_dir, self.run_final_dir)
-                except Exception as e:
-                    pl_module.print(f"OutputManagementCallback: Error moving directory: {e}")
-            else:
-                pl_module.print(f"OutputManagementCallback: Source directory {self.run_base_dir} not found for move, or run_base_dir not set.")
-    
-    # on_test_end: As per the plan, this is not implemented yet,
-    # as the final move was specific to wandb predict in the original code.
-    # If a similar move is needed for test outputs, it would be added here.
+        """Results are already in their final location - no moving needed."""
+        pl_module.print(f"OutputManagementCallback: Results saved in {self.run_output_dir}")
+    # Note: No on_test_end method needed since results stay in place

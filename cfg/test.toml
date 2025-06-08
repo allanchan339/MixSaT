@@ -2,8 +2,6 @@
 
 [paths]
 SoccerNet_path = "/hdda/Datasets/SoccerNet/video"
-# base_output_dir = "lightning_logs" # Handled by OutputManagementCallback default
-# final_results_dir = "retrain2025results" # Handled by OutputManagementCallback default
 ckpt_path = "MixSaT/2va8vsd7/checkpoints/epoch=9-step=5140.ckpt" # Path to the checkpoint for testing
 
 [trainer]
@@ -94,8 +92,10 @@ strategy = "auto" # e.g., "ddp", "dp", "auto"
 # Ensure all parameters required by the classes in main.py are present.
 # For example, if `OutputManagementCallback` or other callbacks need specific args,
 # they should be here.
-base_output_dir = "lightning_logs_test" # Separate output for test runs
-final_results_dir = "SoccerViTAC_test" # Separate results for test runs
+
+# Output directory configuration
+[output_dirs]
+output_dir = "test_results"  # Single directory for all test outputs
 
 # fast_dev_run can be useful for quick test script debugging
 # fast_dev_run = true

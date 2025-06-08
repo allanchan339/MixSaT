@@ -274,13 +274,7 @@ class LitModel(pl.LightningModule):
         # Use the stored test outputs (PyTorch Lightning v2.0+ compatibility)
         test_step_outputs = self.test_step_outputs
         
-        # Zipping is now handled by OutputManagementCallback.on_test_epoch_end
-        
-        if not self.trainer.is_global_zero:
-            # Clear the outputs even if we exit early
-            self.test_step_outputs.clear()
-            return
-            
+        # Zipping is now handled by OutputManagementCallback.on_test_epoch_end            
         output_mgmt_callback = self._get_output_management_callback(self.trainer)
         if not output_mgmt_callback:
             self.print("Error: OutputManagementCallback not found in test_epoch_end. Cannot proceed with evaluation.")
@@ -335,9 +329,3 @@ class LitModel(pl.LightningModule):
             game_ID, feat_half1, feat_half2, label_half1, label_half2, split, self.trainer) # Pass trainer
 
         return flag
-
-    def on_predict_epoch_end(self, predict_step_outputs):
-        # Zipping is now handled by OutputManagementCallback.on_predict_epoch_end
-        # The original zipResults call is removed from here.
-        # If there was any other logic here, it would remain.
-        pass # Placeholder if no other logic was present
