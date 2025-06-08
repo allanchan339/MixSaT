@@ -15,13 +15,13 @@ test_only = true # Crucial for test mode
 
 [data]
 test_batch_size = 1
-batch_size = 1024 # only affect testing batch size, large batch size can make testing faster
+batch_size = 512 # only affect testing batch size, large batch size can make testing faster
 features = "baidu_soccer_embeddings.npy"
 split_train = ["train"] # May not be strictly needed for test_only if dataloaders are conditional
 split_valid = ["valid"] # May not be strictly needed for test_only if dataloaders are conditional
 split_test = ["test", "challenge"] # Ensure this is the target split for testing/prediction
 # max_num_worker: Calculated in main.py if not specified
-# max_num_worker = 4 
+max_num_worker = 12
 framerate = 1
 window_size = 3
 window_shift = 0
@@ -56,7 +56,7 @@ Post_norm = false
 # Logger section - configure as needed for test runs
 [logger]
 logger_type = "wandb" # or "tensorboard" or "none"
-project = "MixSaT_Train_2025" # Your WandB project name for test runs
+project = "MixSaT_Test_2025" # Your WandB project name for test runs
 entity = "cihe-cis"    # Your WandB entity (username or team)
 
 # It's good practice to ensure all keys expected by main_logic are present,
@@ -67,7 +67,7 @@ entity = "cihe-cis"    # Your WandB entity (username or team)
 
 [experiment_params] # Example, if you had such a section
 accelerator = "gpu" # "gpu" or "cpu"
-devices = "auto" # e.g., 1, "0,1", "auto", -1
+devices = "1" # e.g., 1, "0,1", "auto", -1
 strategy = "auto" # e.g., "ddp", "dp", "auto"
 
 # Ensure all parameters required by the classes in main.py are present.

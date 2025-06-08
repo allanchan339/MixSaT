@@ -107,15 +107,21 @@ def setup_callbacks(args):
         logger_type=args.logger_type if hasattr(args, 'logger_type') else 'none',
         output_dir=args.output_dir
     )
-    
-    callbacks_list = [
-        ModelCheckpoint(monitor='Valid/mAP', mode='max'), 
-        ModelSummary(max_depth=-1),
-        LearningRateMonitor(),
-        EarlyStopping(monitor='Valid/mAP', mode='max', patience=args.patience),
-        StochasticWeightAveraging(swa_lrs=args.lrE),
-        output_mgmt_callback
-    ]
+
+    if hasattr(args, 'test_only') and args.test_only:
+        callbacks_list = [
+            ModelSummary(max_depth=-1),
+            output_mgmt_callback
+        ]
+    else:
+        callbacks_list = [
+            ModelCheckpoint(monitor='Valid/mAP', mode='max'), 
+            ModelSummary(max_depth=-1),
+            LearningRateMonitor(),
+            EarlyStopping(monitor='Valid/mAP', mode='max', patience=args.patience),
+            StochasticWeightAveraging(swa_lrs=args.lrE),
+            output_mgmt_callback
+        ]
     
     return callbacks_list
 
@@ -132,5 +138,22 @@ def get_base_trainer_params(args, callbacks_list, logger_to_use):
         'log_every_n_steps': args.log_every_n_steps,
         'callbacks': callbacks_list,
         'logger': logger_to_use,
+        'benchmark': args.benchmark,
         'detect_anomaly': args.detect_anomaly
+    }
+
+
+def get_test_trainer_params(args, callbacks_list, logger_to_use):
+    """Get trainer parameters specifically for testing."""
+    return {
+        'devices': args.devices,
+        'accelerator': args.accelerator,
+        'strategy': args.strategy,
+        'precision': args.precision,
+        'callbacks': callbacks_list,
+        'logger': logger_to_use,
+        'deterministic': args.deterministic,
+        'sync_batchnorm': args.sync_batchnorm,
+        'log_every_n_steps': args.log_every_n_steps,
+        'benchmark': args.benchmark,
     }

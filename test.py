@@ -8,7 +8,7 @@ from src.dataloading.data_loading import LitDataModule
 from src.utils.utils import load_and_flatten_toml_config
 from src.utils.common import (
     setup_gpu_config, setup_seeds, setup_logger, 
-    create_model, setup_callbacks, get_base_trainer_params
+    create_model, setup_callbacks, get_test_trainer_params # Added get_test_trainer_params
 )
 
 
@@ -32,7 +32,7 @@ def test_logic(args):
     callbacks_list = setup_callbacks(args)
     
     # Configure trainer for testing only
-    trainer_params = get_base_trainer_params(args, callbacks_list, logger_to_use)
+    trainer_params = get_test_trainer_params(args, callbacks_list, logger_to_use) # Use get_test_trainer_params
 
     trainer = pl.Trainer(**trainer_params)
 

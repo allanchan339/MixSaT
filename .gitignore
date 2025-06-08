@@ -9,3 +9,5 @@ MixSaT_Train
 **/__pycache__/
 # The above pattern matches all __pycache__ directories recursively
 **/*.pyc
+MixSaT_Train_2025
+MixSaT_Test_2025

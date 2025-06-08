@@ -1,13 +1,13 @@
 # Configuration file for MixSaT project
 
 [paths]
-SoccerNet_path = "/hdda/Datasets/SoccerNet/video"
+SoccerNet_path = "~/Datasets/SoccerNet"
 
 [trainer]
 deterministic = false
 benchmark = true
 min_epochs = 1
-max_epochs = 1000
+max_epochs = 100
 check_val_every_n_epoch = 1
 precision = 'bf16'
 detect_anomaly = false
@@ -21,25 +21,25 @@ devices = [1,2]      # Added: Example 1, "0,1", "auto", -1
 strategy = "ddp_find_unused_parameters_true"     # Added: Example "ddp", "dp", "auto"
 
 [data]
-batch_size = 1024 # each GPU will have 512 samples 
+batch_size = 512 
 test_batch_size = 1
 features = "baidu_soccer_embeddings.npy"
 split_train = ["train"]
 split_valid = ["valid"]
 split_test = ['test']  #["test", "challenge"]
 # max_num_worker: Calculated in main.py if not specified, e.g., os.cpu_count() // torch.cuda.device_count()
-# max_num_worker = 4 
+# max_num_worker = 24 
 framerate = 1
 window_size = 3
 window_shift = 0
-window_stride = 0
+window_stride = 3
 version = 2 # Dataset version
 fast_dev = false # Debug mode, set to true for quick testing
 
 [optimizer]
-lr = 1.0e-3
+lr = 1.0e-4
 lrE = 1.0e-6 # Learning Rate End for SWA
-patience = 50 # Early stopping patience
+patience = 5 # Early stopping patience
 weight_decay = 0.0
 warmup = 125 
 max_iters = 125 
