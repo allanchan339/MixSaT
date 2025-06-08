@@ -17,11 +17,12 @@ limit_val_batches = 1.0
 limit_train_batches = 1.0 # Corrected dest from original parser
 seed = 3407
 accelerator = "gpu" # Added: Example "gpu" or "cpu"
-devices = "auto"      # Added: Example 1, "0,1", "auto", -1
+devices = [1,2]      # Added: Example 1, "0,1", "auto", -1
 strategy = "ddp_find_unused_parameters_true"     # Added: Example "ddp", "dp", "auto"
 
 [data]
-batch_size = 768
+batch_size = 1024 # each GPU will have 512 samples 
+test_batch_size = 1
 features = "baidu_soccer_embeddings.npy"
 split_train = ["train"]
 split_valid = ["valid"]

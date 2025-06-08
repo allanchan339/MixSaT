@@ -24,7 +24,7 @@ def train_logic(args):
         args.limit_val_batches = 1.0    # Ensure float
         args.max_epochs = 5             # Ensure int
         args.devices = [1]  # Use single device for fast dev run
-        args.batch_size = 256  # Use small batch size for fast dev run
+        args.batch_size = 512  # Use small batch size for fast dev run
         args.strategy = 'auto'  # strategy for fast dev run
         args.max_num_worker = 0  # Use no workers for fast dev run
 
@@ -74,7 +74,10 @@ def train_logic(args):
 
     trainer = pl.Trainer(**trainer_params)  # Reinitialize trainer for evaluation
     trainer.test(model=litModel, datamodule=dataModule, ckpt_path=ckpt_for_eval)
-    trainer.predict(model=litModel, datamodule=dataModule, ckpt_path=ckpt_for_eval)
+    
+    # if split_test has two parts, we can predict on the second part
+    if hasattr(args, 'split_test') and len(args.split_test) > 1:
+        trainer.predict(model=litModel, datamodule=dataModule, ckpt_path=ckpt_for_eval)
 
 
 if __name__ == '__main__':
