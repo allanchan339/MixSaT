@@ -42,24 +42,48 @@ def feats2clip(feats, stride, clip_length, padding="replicate_last", off=0, off_
     return feats[idx, ...]  # arrange data based on idx, shape = [180,30,2048]
 
 
-class SoccerNetClipsTesting(Dataset):
+class SoccerNetDatasetBase(Dataset):
+    def __init__(self, version=2):
+        super().__init__()
+        self.version = version
+        if version == 1:
+            # For version 1, the label derivation is custom (card, subs, soccer)
+            # and num_classes is 3. EVENT_DICTIONARY_V1 is also size 3.
+            self.dict_event = EVENT_DICTIONARY_V1 # Retain for consistency or other uses
+            self.labels_filename = "Labels.json"
+            self.num_classes = 3 # Explicitly 3 as per original logic's output for event types
+        elif version == 2:
+            self.dict_event = EVENT_DICTIONARY_V2
+            self.labels_filename = "Labels-v2.json"
+            self.num_classes = len(self.dict_event) # This is 17
+        else:
+            raise ValueError(f"Unsupported version: {version}. Must be 1 or 2.")
+
+    def _get_label_for_event(self, event_text):
+        label = None
+        if self.version == 1:
+            if "card" in event_text:
+                label = 0
+            elif "subs" in event_text:
+                label = 1
+            elif "soccer" in event_text: # "soccer ball" like events
+                label = 2
+        elif self.version == 2:
+            if event_text in self.dict_event:
+                label = self.dict_event[event_text]
+        return label # Returns None if event should be skipped (e.g. not in dict or not matched)
+
+
+class SoccerNetClipsTesting(SoccerNetDatasetBase):
     def __init__(self, path, features="ResNET_PCA512.npy", split=["test"],
                  version=2, framerate=2, window_size=3):
+        super().__init__(version=version)
         self.path = path
         self.listGames = getListGames(split)
         self.features = features
         self.window_size_frame = window_size * framerate
         self.framerate = framerate
-        self.version = version
         self.split = split
-        if version == 1:
-            self.dict_event = EVENT_DICTIONARY_V1
-            self.num_classes = 3
-            self.labels = "Labels.json"
-        elif version == 2:
-            self.dict_event = EVENT_DICTIONARY_V2
-            self.num_classes = 17
-            self.labels = "Labels-v2.json"
 
     def __getitem__(self, index):
         """
@@ -84,11 +108,11 @@ class SoccerNetClipsTesting(Dataset):
         label_half2 = np.zeros((feat_half2.shape[0], self.num_classes))
 
         # check if annoation exists
-        if os.path.exists(os.path.join(self.path, self.listGames[index], self.labels)):
-            labels = json.load(
-                open(os.path.join(self.path, self.listGames[index], self.labels)))
+        if os.path.exists(os.path.join(self.path, self.listGames[index], self.labels_filename)):
+            labels_data = json.load(
+                open(os.path.join(self.path, self.listGames[index], self.labels_filename)))
 
-            for annotation in labels["annotations"]:
+            for annotation in labels_data["annotations"]:
 
                 time = annotation["gameTime"]
                 event = annotation["label"]
@@ -99,20 +123,11 @@ class SoccerNetClipsTesting(Dataset):
                 seconds = int(time[-2::])
                 frame = self.framerate * (seconds + 60 * minutes)
 
-                if self.version == 1:
-                    if "card" in event:
-                        label = 0
-                    elif "subs" in event:
-                        label = 1
-                    elif "soccer" in event:
-                        label = 2
-                    else:
-                        continue
-                elif self.version == 2:
-                    if event not in self.dict_event:
-                        continue
-                    label = self.dict_event[event]
+                label = self._get_label_for_event(event)
 
+                if label is None:
+                    continue
+                
                 value = 1
                 if "visibility" in annotation.keys():
                     if annotation["visibility"] == "not shown":
@@ -139,35 +154,28 @@ class SoccerNetClipsTesting(Dataset):
     def __len__(self):
         return len(self.listGames)
 
-class SoccerNetClipsNoCache_SlidingWindow(Dataset):
+class SoccerNetClipsNoCache_SlidingWindow(SoccerNetDatasetBase):
     def __init__(self, path, features="baidu_ResNET_concat.npy", split=["train"],
                  version=2, stride=3,
                  framerate=2, window_size=3, fast_dev=False):
+        super().__init__(version=version)
         self.path = path
-        self.listGames = getListGames(split)[:5] if fast_dev else getListGames(split)
+        self.listGames = getListGames(split)[:20] if fast_dev else getListGames(split)
         self.features = features
         self.window_size_frame = window_size * framerate
         self.framerate = framerate
         self.split = split
-        self.version = version
         self.stride = stride
         if features == "baidu_ResNET_concat.npy":
             self.feature_name = "ResNET_TF2.npy"
         else:
             self.feature_name = features
-        if version == 1:
-            self.num_classes = 3
-            self.labels = "Labels.json"
-        elif version == 2:
-            self.dict_event = EVENT_DICTIONARY_V2
-            self.num_classes = 17
-            self.labels = "Labels-v2.json"
-
+        
         self.save_clip = []
         self.all_labels = []
         self.all_feats = list()
         self.save_label_position = []
-        for game in tqdm(self.listGames):
+        for game in tqdm(self.listGames, desc=f"{split} Loading features and labels"):
             # Load features
             len_half1 = np.load(os.path.join(
                 self.path, game, "1_" + self.feature_name)).shape[0]
@@ -182,10 +190,10 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
             label_half2 = np.zeros((len_half2, self.num_classes + 1))
             label_half2[:, 0] = 1  # those are BG classes
 
-            if os.path.exists(os.path.join(self.path, game, self.labels)):
-                labels = json.load(
-                    open(os.path.join(self.path, game, self.labels)))
-                for annotation in labels["annotations"]:
+            if os.path.exists(os.path.join(self.path, game, self.labels_filename)):
+                labels_data = json.load(
+                    open(os.path.join(self.path, game, self.labels_filename)))
+                for annotation in labels_data["annotations"]:
                     time = annotation["gameTime"]
                     event = annotation["label"]
                     half = int(time[0])
@@ -193,20 +201,11 @@ class SoccerNetClipsNoCache_SlidingWindow(Dataset):
                     seconds = int(time[-2::])
                     frame = self.framerate * (seconds + 60 * minutes)
 
-                    if self.version == 1:
-                        if "card" in event:
-                            label = 0
-                        elif "subs" in event:
-                            label = 1
-                        elif "soccer" in event:
-                            label = 2
-                        else:
-                            continue
-                    elif self.version == 2:
-                        if event not in self.dict_event:
-                            continue
-                        label = self.dict_event[event]
+                    label = self._get_label_for_event(event)
 
+                    if label is None:
+                        continue
+                    
                     if half == 1 and frame // self.stride >= label_half1.shape[0]:
                         continue  # skip loop if condition meets
                     if half == 2 and frame // self.stride >= label_half2.shape[0]:
