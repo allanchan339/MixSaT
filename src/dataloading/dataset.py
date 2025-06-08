@@ -4,6 +4,7 @@ import json
 import numpy as np
 from tqdm import tqdm
 import os
+import multiprocessing # Added for parallel processing
 from SoccerNet.Downloader import getListGames
 from SoccerNet.Downloader import SoccerNetDownloader
 from SoccerNet.Evaluation.utils import AverageMeter, EVENT_DICTIONARY_V2, INVERSE_EVENT_DICTIONARY_V2
@@ -40,6 +41,108 @@ def feats2clip(feats, stride, clip_length, padding="replicate_last", off=0, off_
         idx = idx.clamp(0, feats.shape[0] - 1)
     # print(idx)
     return feats[idx, ...]  # arrange data based on idx, shape = [180,30,2048]
+
+
+# Worker function for multiprocessing - defined at the module level
+def _process_game_static(worker_args):
+    game_name, base_path, feature_filename_template, game_stride, \
+    labels_filename_template, game_framerate, num_event_classes, \
+    game_version, game_dict_event = worker_args
+
+    # Local version of _get_label_for_event logic
+    def get_label_for_event_local(event_text_local):
+        label_local = None
+        if game_version == 1:
+            if "card" in event_text_local: label_local = 0
+            elif "subs" in event_text_local: label_local = 1
+            elif "soccer" in event_text_local: label_local = 2
+        elif game_version == 2:
+            if event_text_local in game_dict_event:
+                label_local = game_dict_event[event_text_local]
+        return label_local
+
+    game_specific_labels = []
+    game_specific_positions = []
+
+    label_array_dim = num_event_classes + 1  # +1 for background class
+
+    try:
+        path_1_feat = os.path.join(base_path, game_name, "1_" + feature_filename_template)
+        path_2_feat = os.path.join(base_path, game_name, "2_" + feature_filename_template)
+
+        if not (os.path.exists(path_1_feat) and os.path.exists(path_2_feat)):
+            # print(f"Warning: Feature file(s) missing for game {game_name}. Skipping.")
+            return [], []
+
+        len_half1_raw = np.load(path_1_feat, mmap_mode='r').shape[0]
+        len_half1 = len(np.arange(0,  len_half1_raw - 1, game_stride))
+
+        len_half2_raw = np.load(path_2_feat, mmap_mode='r').shape[0]
+        len_half2 = len(np.arange(0, len_half2_raw - 1, game_stride))
+
+    except FileNotFoundError:
+        # print(f"Warning: Feature file not found during shape load for game {game_name}. Skipping.")
+        return [], []
+    except Exception as e:
+        # print(f"Warning: Error loading feature shapes for game {game_name}: {e}. Skipping.")
+        return [], []
+
+    label_h1_data = np.zeros((len_half1, label_array_dim))
+    label_h1_data[:, 0] = 1  # Initialize with background class
+    label_h2_data = np.zeros((len_half2, label_array_dim))
+    label_h2_data[:, 0] = 1  # Initialize with background class
+
+    path_labels_file = os.path.join(base_path, game_name, labels_filename_template)
+    if os.path.exists(path_labels_file):
+        try:
+            with open(path_labels_file, 'r') as f:
+                labels_json_data = json.load(f)
+        except Exception as e:
+            # print(f"Warning: Error loading/parsing labels JSON for game {game_name}: {e}. Proceeding without annotations for this game.")
+            labels_json_data = {"annotations": []}
+
+        for annotation in labels_json_data.get("annotations", []):
+            time = annotation.get("gameTime")
+            event = annotation.get("label")
+
+            if not time or not event: # Basic check for malformed annotation
+                continue
+
+            try:
+                half = int(time[0])
+                minutes = int(time[-5:-3])
+                seconds = int(time[-2::])
+            except (ValueError, IndexError):
+                # print(f"Warning: Malformed gameTime '{time}' in game {game_name}. Skipping annotation.")
+                continue
+                
+            frame = game_framerate * (seconds + 60 * minutes)
+            label_idx = get_label_for_event_local(event)
+
+            if label_idx is None:
+                continue
+
+            target_label_col = label_idx + 1 # Map event label to column index (0 is BG)
+
+            current_frame_idx = frame // game_stride
+            if half == 1:
+                if current_frame_idx < label_h1_data.shape[0]:
+                    label_h1_data[current_frame_idx, 0] = 0  # Not background
+                    label_h1_data[current_frame_idx, target_label_col] = 1
+            elif half == 2:
+                if current_frame_idx < label_h2_data.shape[0]:
+                    label_h2_data[current_frame_idx, 0] = 0  # Not background
+                    label_h2_data[current_frame_idx, target_label_col] = 1
+    
+    for i in range(label_h1_data.shape[0]):
+        game_specific_labels.append(label_h1_data[i])
+        game_specific_positions.append([game_name, '1_', i])
+
+    for i in range(label_h2_data.shape[0]):
+        game_specific_labels.append(label_h2_data[i])
+        game_specific_positions.append([game_name, '2_', i])
+
+    return game_specific_labels, game_specific_positions
 
 
 class SoccerNetDatasetBase(Dataset):
@@ -159,80 +262,54 @@ class SoccerNetClipsNoCache_SlidingWindow(SoccerNetDatasetBase):
                  version=2, stride=3,
                  framerate=2, window_size=3, fast_dev=False):
         super().__init__(version=version)
-        self.path = path
+        self.path = os.path.expanduser(path) if '~' in path else path
+        
         self.listGames = getListGames(split)[:20] if fast_dev else getListGames(split)
-        self.features = features
+        self.features = features # This is for __getitem__ to load the actual feature data
         self.window_size_frame = window_size * framerate
         self.framerate = framerate
-        self.split = split
+        self.split = split # Keep self.split for potential use elsewhere or logging
         self.stride = stride
-        if features == "baidu_ResNET_concat.npy":
-            self.feature_name = "ResNET_TF2.npy"
-        else:
-            self.feature_name = features
         
-        self.save_clip = []
+        # Determine the feature_name for loading shapes in __init__
+        # self.feature_name is used for loading feature shapes, self.features for loading actual data in __getitem__
+        if features == "baidu_ResNET_concat.npy":
+            self.feature_name_for_shape_loading = "ResNET_TF2.npy"
+        else:
+            self.feature_name_for_shape_loading = features
+        
         self.all_labels = []
-        self.all_feats = list()
         self.save_label_position = []
-        for game in tqdm(self.listGames, desc=f"{split} Loading features and labels"):
-            # Load features
-            len_half1 = np.load(os.path.join(
-                self.path, game, "1_" + self.feature_name)).shape[0]
-            len_half1 = len(np.arange(0,  len_half1 - 1, self.stride))
-            len_half2 = np.load(os.path.join(
-                self.path, game, "2_" + self.feature_name)).shape[0]
-            len_half2 = len(np.arange(0, len_half2 - 1, self.stride))
-            # self.game_length.append([len_half1, len_half2])
+        # self.all_feats = list() # Not modified in the original highlighted section
+        # self.save_clip = [] # Not modified in the original highlighted section
 
-            label_half1 = np.zeros((len_half1, self.num_classes + 1))
-            label_half1[:, 0] = 1  # those are BG classes
-            label_half2 = np.zeros((len_half2, self.num_classes + 1))
-            label_half2[:, 0] = 1  # those are BG classes
+        worker_args_list = []
+        for game_name_iter in self.listGames:
+            worker_args_list.append((
+                game_name_iter, self.path, self.feature_name_for_shape_loading, self.stride,
+                self.labels_filename, self.framerate, self.num_classes, # Pass actual num_classes
+                self.version, self.dict_event
+            ))
 
-            if os.path.exists(os.path.join(self.path, game, self.labels_filename)):
-                labels_data = json.load(
-                    open(os.path.join(self.path, game, self.labels_filename)))
-                for annotation in labels_data["annotations"]:
-                    time = annotation["gameTime"]
-                    event = annotation["label"]
-                    half = int(time[0])
-                    minutes = int(time[-5:-3])
-                    seconds = int(time[-2::])
-                    frame = self.framerate * (seconds + 60 * minutes)
+        desc_split_part = self.split[0] if self.split and len(self.split) > 0 else "data"
+        
+        if worker_args_list: # Only run multiprocessing if there are games
+            # Determine number of processes, fallback to 1 if os.cpu_count() is unavailable or 0
+            num_processes = os.cpu_count()
+            if not num_processes or num_processes < 1:
+                num_processes = 1
+            # Cap processes to avoid overwhelming system, e.g., max(1, min(num_processes, 8))
+            # For this example, we'll use num_processes directly or a simple cap.
+            # num_processes = min(num_processes, 8) # Optional: cap number of processes
 
-                    label = self._get_label_for_event(event)
-
-                    if label is None:
-                        continue
-                    
-                    if half == 1 and frame // self.stride >= label_half1.shape[0]:
-                        continue  # skip loop if condition meets
-                    if half == 2 and frame // self.stride >= label_half2.shape[0]:
-                        continue
-
-                    # Ignore non-visibility label
-                    # if "visibility" in annotation.keys():
-                    #     if annotation["visibility"] == "not shown":
-                    #         continue
-
-                    if half == 1:  # if on label.json
-                        # frame = min(frame, len_half1 - 1)
-                        label_half1[frame // self.stride][0] = 0
-                        label_half1[frame // self.stride][label + 1] = 1
-
-                    if half == 2:
-                        # frame = min(frame, len_half2 - 1)
-                        label_half2[frame // self.stride][0] = 0
-                        label_half2[frame // self.stride][label + 1] = 1
-
-                for i in range(label_half1.shape[0]):
-                    self.all_labels.append((label_half1[i]))  # label_half1 = np.delete(label_half1, i)
-                    self.save_label_position.append([game, '1_', i])
-
-                for i in range(label_half2.shape[0]):
-                    self.all_labels.append((label_half2[i]))
-                    self.save_label_position.append([game, '2_', i])
+            with multiprocessing.Pool(processes=num_processes) as pool:
+                all_results = list(tqdm(pool.imap(_process_game_static, worker_args_list),
+                                        total=len(worker_args_list),
+                                        desc=f"{desc_split_part} Loading features and labels"))
+            
+            for single_game_labels, single_game_positions in all_results:
+                self.all_labels.extend(single_game_labels)
+                self.save_label_position.extend(single_game_positions)
 
     def __getitem__(self, index):
         """
