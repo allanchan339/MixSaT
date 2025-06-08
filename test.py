@@ -1,6 +1,7 @@
 import pytorch_lightning as pl
 import argparse
 import os
+import torch  # Added import
 
 from src.research.training import LitModel
 from src.dataloading.data_loading import LitDataModule
@@ -18,14 +19,7 @@ parser.add_argument('--cfg', type=str, default='cfg/test.toml',
 
 def test_logic(args):
     """Main testing logic."""
-    # Handle fast dev run configuration
-    if hasattr(args, 'fast_dev_run') and args.fast_dev_run:
-        args.limit_train_batches = 1.0  # Ensure float
-        args.limit_val_batches = 1.0    # Ensure float
-        args.max_epochs = 1             # Ensure int
 
-    # Setup configurations
-    num_gpus = setup_gpu_config(args)
     setup_seeds(args)
     logger_to_use = setup_logger(args)
     
@@ -39,11 +33,6 @@ def test_logic(args):
     
     # Configure trainer for testing only
     trainer_params = get_base_trainer_params(args, callbacks_list, logger_to_use)
-    trainer_params.update({
-        'limit_train_batches': 0.0,  # Disable training
-        'limit_val_batches': 0.0,    # Disable validation
-        'fast_dev_run': hasattr(args, 'fast_dev_run') and args.fast_dev_run
-    })
 
     trainer = pl.Trainer(**trainer_params)
 
@@ -54,10 +43,14 @@ def test_logic(args):
     
     # Run testing and prediction
     trainer.test(model=litModel, datamodule=dataModule, ckpt_path=ckpt_path_val)
-    trainer.predict(model=litModel, datamodule=dataModule, ckpt_path=ckpt_path_val)
+    # if split_test has two parts, we can predict on the second part
+    if hasattr(args, 'split_test') and len(args.split_test) > 1:
+        trainer.predict(model=litModel, datamodule=dataModule,
+                        ckpt_path=ckpt_path_val)
 
 
 if __name__ == '__main__':
+    torch.set_float32_matmul_precision('medium')  # Added for consistency and potential performance
     cli_args = parser.parse_args()
     flat_config_dict = load_and_flatten_toml_config(cli_args.cfg)
     args_namespace = argparse.Namespace(**flat_config_dict)
