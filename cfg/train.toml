@@ -74,10 +74,10 @@ Post_norm = false # False to use PreNorm, True to use PostNorm
 # Added Logger section for WandB (and other) configurations
 [logger]
 logger_type = "wandb" # Options: "wandb", "tensorboard", "none"
-project = "MixSaT_Train" # Your WandB project name
+project = "MixSaT_Train_2025" # Your WandB project name
 entity = "cihe-cis"    # Your WandB entity (username or team)
 # experiment_name = "" # Leave commented out to let WandB generate random name
 
 # Output directory configuration
 [output_dirs]
-output_dir = "MixSaT_Train"  # Project-named directory for all training outputs
+output_dir = "MixSaT_Train_2025"  # Project-named directory for all training outputs
