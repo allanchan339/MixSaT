@@ -57,16 +57,16 @@ class LitModel(pl.LightningModule):
             optimizer, warmup=self.args.warmup, max_iters=self.args.max_iters
         )
         return optimizer
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": scheduler,
-                "monitor": "Valid/mAP",
-                "frequency": 1*self.args.check_val_every_n_epoch
-                # If "monitor" references validation metrics, then "frequency" should be set to a
-                # multiple of "trainer.check_val_every_n_epoch".
-            },
-        }
+        # return {
+        #     "optimizer": optimizer,
+        #     "lr_scheduler": {
+        #         "scheduler": scheduler,
+        #         "monitor": "Valid/mAP",
+        #         "frequency": 1*self.args.check_val_every_n_epoch
+        #         # If "monitor" references validation metrics, then "frequency" should be set to a
+        #         # multiple of "trainer.check_val_every_n_epoch".
+        #     },
+        # }
 
     def optimizer_step(self, *args, **kwargs):
         # we update lr per iter
@@ -155,16 +155,14 @@ class LitModel(pl.LightningModule):
                 #dict["kick-off"] = AP[0]
                 tmp[k] = AP[v]
 
-            self.log('Valid/mAP', mAP, logger=True, prog_bar=True,
-                     )
+            self.log('Valid/mAP', mAP, logger=True, prog_bar=True, sync_dist=True)
 
             label_cls = (list(EVENT_DICTIONARY_V2.keys()))
-            zip_iterator = zip(label_cls, AP)
-            AP_dictionary = dict(zip_iterator)
-            
+            AP_dictionary = dict(zip(label_cls, AP)) # label_cls has 17 keys. AP should have 17 values.
+
             # Log each AP value individually since PyTorch Lightning cannot log dictionaries
             for key, value in AP_dictionary.items():
-                self.log(f'Valid/AP/{key}', value, logger=True, prog_bar=False)
+                self.log(f'Valid/AP/{key}', value, logger=True, prog_bar=False, sync_dist=True)
 
         if self.args.strategy in ['ddp', 'ddp_sharded', 'ddp_find_unused_parameters_true']:
             validation_step_outputs = self.all_gather(validation_step_outputs)
