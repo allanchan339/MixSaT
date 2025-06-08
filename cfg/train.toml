@@ -32,19 +32,17 @@ split_test = ['test']  #["test", "challenge"]
 framerate = 1
 window_size = 3
 window_shift = 0
-window_stride = 3
+window_stride = 0
 version = 2 # Dataset version
-fast_dev = true # Added: Required for data loading
+fast_dev = false # Debug mode, set to true for quick testing
 
 [optimizer]
 lr = 1.0e-3
 lrE = 1.0e-6 # Learning Rate End for SWA
 patience = 50 # Early stopping patience
 weight_decay = 0.0
-# warmup: Calculated in main.py if not specified, e.g., (1000 // torch.cuda.device_count())
-# warmup = 250 
-# max_iters: Calculated in main.py if not specified, e.g., (1000 // torch.cuda.device_count())
-# max_iters = 250 
+warmup = 125 
+max_iters = 125 
 
 [model]
 feature_dim = "" # Changed from 'null' to an empty string for valid TOML.
