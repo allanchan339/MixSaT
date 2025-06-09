@@ -2,6 +2,7 @@ import json
 import os
 import csv
 from pathlib import Path
+import argparse # Added for command-line arguments
 
 def format_time_from_seconds(seconds_str):
     """Converts seconds string (possibly float) to MM:SS format."""
@@ -130,10 +131,11 @@ def process_json_to_csv(json_file_path, output_csv_path, threshold=0.6):
         print(f"No actions met the threshold >= {threshold} (or no valid actions found) in {json_file_path}. CSV not created.")
     print(f"--- Finished processing JSON file: {json_file_path} ---\n")
 
-def main():
-    base_input_dir = Path("/code/MixSaT/MixSaT_Test_2025/hwatxu3y/results/output_test")
-    base_output_dir = Path("/code/MixSaT/MixSaT_Test_2025/hwatxu3y/results/sub")
-    threshold = 0.6  # Adjustable hyperparameter
+def main(base_input_dir_str, base_output_dir_str, threshold_val):
+    base_input_dir = Path(base_input_dir_str)
+    base_output_dir = Path(base_output_dir_str)
+    threshold = threshold_val
+    
     target_json_filename = "results_spotting.json"
 
     if not base_input_dir.is_dir():
@@ -170,4 +172,25 @@ def main():
     print(f"Processing complete. Output should be in {base_output_dir}")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Process spotting results JSON files to CSV.")
+    parser.add_argument(
+        "--input_dir", 
+        type=str, 
+        default="/code/MixSaT/MixSaT_Test_2025/hwatxu3y/results/output_test",
+        help="Base directory containing the input JSON files."
+    )
+    parser.add_argument(
+        "--output_dir", 
+        type=str, 
+        default="/code/MixSaT/MixSaT_Test_2025/hwatxu3y/results/sub",
+        help="Base directory where the output CSV files will be saved."
+    )
+    parser.add_argument(
+        "--threshold", 
+        type=float, 
+        default=0.6,
+        help="Confidence threshold for filtering actions (0.0 to 1.0)."
+    )
+    args = parser.parse_args()
+    
+    main(args.input_dir, args.output_dir, args.threshold)
