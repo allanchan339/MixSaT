@@ -181,7 +181,7 @@ class SoccerNetClipsTesting(SoccerNetDatasetBase):
     def __init__(self, path, features="ResNET_PCA512.npy", split=["test"],
                  version=2, framerate=2, window_size=3):
         super().__init__(version=version)
-        self.path = path
+        self.path = os.path.expanduser(path) if '~' in path else path
         self.listGames = getListGames(split)
         self.features = features
         self.window_size_frame = window_size * framerate
